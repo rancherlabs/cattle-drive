@@ -1,14 +1,14 @@
 package projects
 
 import (
+	"context"
 	"fmt"
 	"galal-hussein/cattle-drive/cli/cmds"
-	"strings"
+	"galal-hussein/cattle-drive/pkg/client"
 
-	"github.com/rancher/norman/clientbase"
-	"github.com/rancher/norman/types"
-	mgmtClient "github.com/rancher/rancher/pkg/client/generated/management/v3"
+	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/urfave/cli"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -25,22 +25,21 @@ var (
 )
 
 func list(clx *cli.Context) error {
-	// ctx := context.Background()
+	ctx := context.Background()
 
 	restConfig, err := clientcmd.BuildConfigFromFlags("", cmds.Kubeconfig)
 	if err != nil {
 		return err
 	}
-	client, err := mgmtClient.NewClient(&clientbase.ClientOpts{
-		URL:       restConfig.Host,
-		AccessKey: strings.Split(restConfig.BearerToken, ":")[0],
-		SecretKey: strings.Split(restConfig.BearerToken, ":")[1],
-		Insecure:  true,
-	})
+	client, err := client.New(ctx, restConfig)
 	if err != nil {
 		return err
 	}
-	projects, _ := client.Project.List(&types.ListOpts{})
+	var projects v3.ProjectList
+
+	if err := client.Projects.List(ctx, "", &projects, v1.ListOptions{}); err != nil {
+		return err
+	}
 	fmt.Printf("%#v\n", projects)
 	return nil
 }
