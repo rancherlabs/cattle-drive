@@ -2,16 +2,16 @@ package cmds
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 var (
 	debug       bool
 	Kubeconfig  string
 	CommonFlags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "kubeconfig",
-			EnvVar:      "KUBECONFIG",
+			EnvVars:     []string{"KUBECONFIG"},
 			Usage:       "Kubeconfig path",
 			Destination: &Kubeconfig,
 		},
@@ -23,11 +23,11 @@ func NewApp() *cli.App {
 	app.Name = "cattle-drive"
 	app.Usage = "Tool for migrating rancher objects for RKE downstream clusters"
 	app.Flags = []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:        "debug",
 			Usage:       "Turn on debug logs",
 			Destination: &debug,
-			EnvVar:      "CATTLE_DRIVE_DEBUG",
+			EnvVars:     []string{"CATTLE_DRIVE_DEBUG"},
 		},
 	}
 

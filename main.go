@@ -2,11 +2,11 @@ package main
 
 import (
 	"galal-hussein/cattle-drive/cli/cmds"
-	"galal-hussein/cattle-drive/cli/cmds/projects"
+	"galal-hussein/cattle-drive/cli/cmds/status"
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -17,8 +17,8 @@ const (
 
 func main() {
 	app := cmds.NewApp()
-	app.Commands = []cli.Command{
-		projects.NewCommand(),
+	app.Commands = []*cli.Command{
+		status.NewCommand(),
 	}
 	app.Version = version + " (" + gitCommit + ")"
 

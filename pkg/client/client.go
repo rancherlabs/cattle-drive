@@ -14,8 +14,12 @@ import (
 )
 
 type Clients struct {
-	Projects   client.Client
-	ConfigMaps v1.ConfigMapClient
+	Clusters                    *client.Client
+	Projects                    *client.Client
+	ProjectRoleTemplateBindings *client.Client
+	ClusterRoleTemplateBindings *client.Client
+	ClusterRegistrationTokens   *client.Client
+	ConfigMaps                  v1.ConfigMapClient
 }
 
 func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
@@ -40,12 +44,19 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 	if err != nil {
 		return nil, err
 	}
-	projectGVR := schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "projects"}
-	ProjectKind := "Project"
-	projectController := factory.ForResourceKind(projectGVR, ProjectKind, false)
 
 	return &Clients{
-		ConfigMaps: clients.Core.ConfigMap(),
-		Projects:   *projectController.Client(),
+		ConfigMaps:                  clients.Core.ConfigMap(),
+		Clusters:                    NewClient(factory, "management.cattle.io", "v3", "clusters", "Cluster", false),
+		Projects:                    NewClient(factory, "management.cattle.io", "v3", "projects", "Project", true),
+		ProjectRoleTemplateBindings: NewClient(factory, "management.cattle.io", "v3", "projectRoleTemplateBindings", "ProjectRoleTemplateBinding", false),
+		ClusterRoleTemplateBindings: NewClient(factory, "management.cattle.io", "v3", "clusterRoleTemplateBindings", "ClusterRoleTemplateBinding", false),
+		ClusterRegistrationTokens:   NewClient(factory, "management.cattle.io", "v3", "clusterRegistrationTokens", "ClusterRegistrationToken", false),
 	}, nil
+}
+
+func NewClient(factory controller.SharedControllerFactory, group, version, resource, kind string, namespaced bool) *client.Client {
+	gvr := schema.GroupVersionResource{Group: group, Resource: resource, Version: version}
+	sharedController := factory.ForResourceKind(gvr, kind, namespaced)
+	return sharedController.Client()
 }
