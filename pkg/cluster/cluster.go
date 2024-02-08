@@ -5,56 +5,41 @@ import (
 	"galal-hussein/cattle-drive/pkg/client"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Cluster struct {
-	Obj      *v3.Cluster
-	Projects map[string]*Project
+	Obj                         *v3.Cluster
+	Projects                    map[string]Project
+	ProjectRoleTemplateBindings map[string]ProjectRoleTemplateBinding
 }
 
 type Project struct {
 	Obj      *v3.Project
 	Migrated bool
+	Diff     bool
+}
+
+type ProjectRoleTemplateBinding struct {
+	Obj      *v3.ProjectRoleTemplateBinding
+	Migrated bool
+	Diff     bool
 }
 
 func (c *Cluster) Status(ctx context.Context, client *client.Clients, target *Cluster) error {
-	// get all projects for the source and target cluster
-	var (
-		sourceProjects v3.ProjectList
-		targetProjects v3.ProjectList
-	)
-	if err := client.Projects.List(ctx, c.Obj.Name, &sourceProjects, v1.ListOptions{}); err != nil {
+
+	if err := c.projectsStatus(ctx, client, target); err != nil {
 		return err
 	}
 
-	if err := client.Projects.List(ctx, target.Obj.Name, &targetProjects, v1.ListOptions{}); err != nil {
-		return err
-	}
-
-	for _, i := range sourceProjects.Items {
-		logrus.Infof("project %s", i.Spec.DisplayName)
-	}
+	// if project.Migrated {
+	// 	if project.Diff {
+	// 		fmt.Printf("- [%s] \u2718 (wrong spec) \n", projectName)
+	// 	} else {
+	// 		fmt.Printf("- [%s] \u2714 \n", projectName)
+	// 	}
+	// } else {
+	// 	fmt.Printf("- [%s] \u2718 \n", projectName)
+	// }
 
 	return nil
 }
-
-// func toMap(objects interface{}) (map[string]runtime.Object, error) {
-// 	m := make(map[string]runtime.Object)
-// 	objs, ok := objects.([]runtime.Object)
-// 	if !ok {
-// 		return nil, errors.New("error")
-// 	}
-// 	for _, item := range objs {
-// 		objCopy := item.DeepCopyObject()
-
-// 		objMeta, err := meta.Accessor(objCopy)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-
-// 		m[objMeta.GetName()] = objCopy
-// 	}
-// 	return m, nil
-// }
