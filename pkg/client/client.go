@@ -50,7 +50,7 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 		Clusters:                    NewClient(factory, "management.cattle.io", "v3", "clusters", "Cluster", false),
 		Projects:                    NewClient(factory, "management.cattle.io", "v3", "projects", "Project", true),
 		ProjectRoleTemplateBindings: NewClient(factory, "management.cattle.io", "v3", "projectRoleTemplateBindings", "ProjectRoleTemplateBinding", true),
-		ClusterRoleTemplateBindings: NewClient(factory, "management.cattle.io", "v3", "clusterRoleTemplateBindings", "ClusterRoleTemplateBinding", false),
+		ClusterRoleTemplateBindings: NewClient(factory, "management.cattle.io", "v3", "clusterRoleTemplateBindings", "ClusterRoleTemplateBinding", true),
 		ClusterRegistrationTokens:   NewClient(factory, "management.cattle.io", "v3", "clusterRegistrationTokens", "ClusterRegistrationToken", false),
 	}, nil
 }

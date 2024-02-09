@@ -5,7 +5,6 @@ import (
 	"galal-hussein/cattle-drive/cli/cmds/status"
 	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
@@ -23,6 +22,6 @@ func main() {
 	app.Version = version + " (" + gitCommit + ")"
 
 	if err := app.Run(os.Args); err != nil {
-		logrus.Fatal(err)
+		os.Exit(1)
 	}
 }

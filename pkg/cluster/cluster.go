@@ -17,6 +17,7 @@ type Cluster struct {
 
 type ToMigrate struct {
 	Projects []*Project
+	CRTBs    []*ClusterRoleTemplateBinding
 }
 
 // Populate will fill in the objects to be migrated
@@ -24,6 +25,7 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 	var (
 		projects                    v3.ProjectList
 		projectRoleTemplateBindings v3.ProjectRoleTemplateBindingList
+		clusterRoleTemplateBindings v3.ClusterRoleTemplateBindingList
 	)
 	if err := client.Projects.List(ctx, c.Obj.Name, &projects, v1.ListOptions{}); err != nil {
 		return err
@@ -55,8 +57,23 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		pList = append(pList, p)
 	}
 
+	crtbList := []*ClusterRoleTemplateBinding{}
+	if err := client.ClusterRoleTemplateBindings.List(ctx, c.Obj.Name, &clusterRoleTemplateBindings, v1.ListOptions{}); err != nil {
+		return err
+	}
+	for _, item := range clusterRoleTemplateBindings.Items {
+		crtb := &ClusterRoleTemplateBinding{
+			Name:     item.Name,
+			Obj:      item.DeepCopy(),
+			Migrated: false,
+			Diff:     false,
+		}
+		crtb.normalize()
+		crtbList = append(crtbList, crtb)
+	}
 	c.ToMigrate = ToMigrate{
 		Projects: pList,
+		CRTBs:    crtbList,
 	}
 	return nil
 }
@@ -73,7 +90,6 @@ func (c *Cluster) Compare(ctx context.Context, client *client.Clients, tc *Clust
 					break
 				}
 				// now we check for prtbs related to that project
-
 				for _, sPrtb := range sProject.PRTBs {
 					for _, tPrtb := range tProject.PRTBs {
 						if sPrtb.Name == tPrtb.Name {
@@ -88,6 +104,18 @@ func (c *Cluster) Compare(ctx context.Context, client *client.Clients, tc *Clust
 		}
 	}
 
+	// crtbs
+	for _, sCrtb := range c.ToMigrate.CRTBs {
+		for _, tCrtb := range tc.ToMigrate.CRTBs {
+			if sCrtb.Name == tCrtb.Name {
+				sCrtb.Migrated = true
+				if !reflect.DeepEqual(sCrtb.Obj, tCrtb.Obj) {
+					sCrtb.Diff = true
+					break
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -99,7 +127,7 @@ func (c *Cluster) Status(ctx context.Context, client *client.Clients) error {
 				fmt.Printf("- [%s] \u2718 (wrong spec) \n", p.Name)
 			} else {
 				fmt.Printf("- [%s] \u2714 \n", p.Name)
-				fmt.Printf("  prtbs:\n")
+				fmt.Printf("  project role template bindings:\n")
 				for _, prtb := range p.PRTBs {
 					if prtb.Migrated {
 						if prtb.Diff {
@@ -114,6 +142,18 @@ func (c *Cluster) Status(ctx context.Context, client *client.Clients) error {
 			}
 		} else {
 			fmt.Printf("- [%s] \u2718 \n", p.Name)
+		}
+	}
+	fmt.Printf("Cluster role template bindings status:\n")
+	for _, crtb := range c.ToMigrate.CRTBs {
+		if crtb.Migrated {
+			if crtb.Diff {
+				fmt.Printf("- [%s] \u2718 (wrong spec) \n", crtb.Name)
+			} else {
+				fmt.Printf("- [%s] \u2714 \n", crtb.Name)
+			}
+		} else {
+			fmt.Printf("- [%s] \u2718 \n", crtb.Name)
 		}
 	}
 	return nil

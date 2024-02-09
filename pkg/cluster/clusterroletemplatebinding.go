@@ -5,16 +5,16 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ProjectRoleTemplateBinding struct {
+type ClusterRoleTemplateBinding struct {
 	Name     string
-	Obj      *v3.ProjectRoleTemplateBinding
+	Obj      *v3.ClusterRoleTemplateBinding
 	Migrated bool
 	Diff     bool
 }
 
 // normalize will remove unneeded fields in the spec to make it easier to compare
-func (p *ProjectRoleTemplateBinding) normalize() {
+func (c *ClusterRoleTemplateBinding) normalize() {
 	// removing objectMeta and projectName since prtb has no spec
-	p.Obj.ObjectMeta = v1.ObjectMeta{}
-	p.Obj.ProjectName = ""
+	c.Obj.ObjectMeta = v1.ObjectMeta{}
+	c.Obj.ClusterName = ""
 }

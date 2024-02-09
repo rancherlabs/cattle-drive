@@ -2,7 +2,6 @@ package projects
 
 import (
 	"context"
-	"fmt"
 	"galal-hussein/cattle-drive/cli/cmds"
 	"galal-hussein/cattle-drive/pkg/client"
 
@@ -40,6 +39,5 @@ func list(clx *cli.Context) error {
 	if err := client.Projects.List(ctx, "", &projects, v1.ListOptions{}); err != nil {
 		return err
 	}
-	fmt.Printf("%#v\n", projects)
 	return nil
 }
