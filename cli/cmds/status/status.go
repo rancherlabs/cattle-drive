@@ -82,8 +82,15 @@ func status(clx *cli.Context) error {
 	tc := &cluster.Cluster{
 		Obj: targetCluster,
 	}
-	if err := sc.Status(ctx, client, tc); err != nil {
+	if err := sc.Populate(ctx, client); err != nil {
 		return err
 	}
-	return nil
+	if err := tc.Populate(ctx, client); err != nil {
+		return err
+	}
+	if err := sc.Compare(ctx, client, tc); err != nil {
+		return err
+	}
+
+	return sc.Status(ctx, client)
 }
