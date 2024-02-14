@@ -12,6 +12,15 @@ type ProjectRoleTemplateBinding struct {
 	Diff     bool
 }
 
+func newPRTB(obj v3.ProjectRoleTemplateBinding) *ProjectRoleTemplateBinding {
+	return &ProjectRoleTemplateBinding{
+		Name:     obj.Name,
+		Obj:      obj.DeepCopy(),
+		Migrated: false,
+		Diff:     false,
+	}
+}
+
 // normalize will remove unneeded fields in the spec to make it easier to compare
 func (p *ProjectRoleTemplateBinding) normalize() {
 	// removing objectMeta and projectName since prtb has no spec
