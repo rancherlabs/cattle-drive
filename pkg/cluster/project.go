@@ -12,24 +12,22 @@ const (
 )
 
 type Project struct {
-	Name         string
-	Obj          *v3.Project
-	Migrated     bool
-	Diff         bool
-	PRTBs        []*ProjectRoleTemplateBinding
-	Roles        []*Role
-	RoleBindings []*RoleBinding
+	Name       string
+	Obj        *v3.Project
+	Migrated   bool
+	Diff       bool
+	PRTBs      []*ProjectRoleTemplateBinding
+	Namespaces []*Namespace
 }
 
-func newProject(obj v3.Project, prtbs []*ProjectRoleTemplateBinding, roles []*Role, roleBindings []*RoleBinding) *Project {
+func newProject(obj v3.Project, prtbs []*ProjectRoleTemplateBinding, namespaces []*Namespace) *Project {
 	return &Project{
-		Name:         obj.Spec.DisplayName,
-		Obj:          obj.DeepCopy(),
-		Migrated:     false,
-		Diff:         false,
-		PRTBs:        prtbs,
-		Roles:        roles,
-		RoleBindings: roleBindings,
+		Name:       obj.Spec.DisplayName,
+		Obj:        obj.DeepCopy(),
+		Migrated:   false,
+		Diff:       false,
+		PRTBs:      prtbs,
+		Namespaces: namespaces,
 	}
 }
 

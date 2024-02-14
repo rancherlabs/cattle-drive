@@ -38,3 +38,17 @@ func (c *ClusterRoleTemplateBinding) normalize() {
 	c.Obj.ObjectMeta = v1.ObjectMeta{}
 	c.Obj.ClusterName = ""
 }
+
+func (c *ClusterRoleTemplateBinding) mutate(tc *Cluster) {
+	c.Obj.ClusterName = tc.Obj.Name
+	c.Obj.SetName(c.Name)
+	c.Obj.SetNamespace(tc.Obj.Name)
+	c.Obj.SetFinalizers(nil)
+	c.Obj.SetResourceVersion("")
+	c.Obj.SetLabels(nil)
+	for annotation := range c.Obj.Annotations {
+		if strings.Contains(annotation, lifeCycleAnnotationPrefix) {
+			delete(c.Obj.Annotations, annotation)
+		}
+	}
+}

@@ -5,8 +5,10 @@ import (
 	"galal-hussein/cattle-drive/cli/cmds"
 	"galal-hussein/cattle-drive/cli/cmds/migrate"
 	"galal-hussein/cattle-drive/cli/cmds/status"
+	"io"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
@@ -24,6 +26,7 @@ func main() {
 	}
 	app.Version = version + " (" + gitCommit + ")"
 
+	logrus.SetOutput(io.Discard)
 	if err := app.Run(os.Args); err != nil {
 		fmt.Printf("exiting tool: %v", err)
 		os.Exit(1)

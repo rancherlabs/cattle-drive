@@ -8,7 +8,6 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/cluster.cattle.io/v3"
 	"github.com/rancher/wrangler/pkg/clients"
 	v1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	rbac "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
@@ -22,8 +21,7 @@ type Clients struct {
 	ClusterRegistrationTokens   *client.Client
 	Users                       *client.Client
 	ConfigMaps                  v1.ConfigMapClient
-	Roles                       rbac.RoleClient
-	RoleBindings                rbac.RoleBindingClient
+	Namespace                   v1.NamespaceClient
 }
 
 func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
@@ -51,8 +49,7 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 
 	return &Clients{
 		ConfigMaps:                  clients.Core.ConfigMap(),
-		Roles:                       clients.RBAC.Role(),
-		RoleBindings:                clients.RBAC.RoleBinding(),
+		Namespace:                   clients.Core.Namespace(),
 		Users:                       NewClient(factory, "management.cattle.io", "v3", "users", "User", false),
 		Clusters:                    NewClient(factory, "management.cattle.io", "v3", "clusters", "Cluster", false),
 		Projects:                    NewClient(factory, "management.cattle.io", "v3", "projects", "Project", true),

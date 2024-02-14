@@ -48,7 +48,7 @@ func status(clx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	client, err := client.New(ctx, restConfig)
+	cl, err := client.New(ctx, restConfig)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func status(clx *cli.Context) error {
 
 	var clusters v3.ClusterList
 	var sourceCluster, targetCluster *v3.Cluster
-	if err := client.Clusters.List(ctx, "", &clusters, v1.ListOptions{}); err != nil {
+	if err := cl.Clusters.List(ctx, "", &clusters, v1.ListOptions{}); err != nil {
 		return err
 	}
 
@@ -76,21 +76,36 @@ func status(clx *cli.Context) error {
 	if sourceCluster == nil || targetCluster == nil {
 		logrus.Fatal("failed to find source or target cluster")
 	}
+	// initiate client for the cluster
+	scConfig := *restConfig
+	scConfig.Host = restConfig.Host + "/k8s/clusters/" + sourceCluster.Name
+	scClient, err := client.New(ctx, &scConfig)
+	if err != nil {
+		return err
+	}
 	sc := &cluster.Cluster{
-		Obj: sourceCluster,
+		Obj:    sourceCluster,
+		Client: scClient,
+	}
+	tcConfig := *restConfig
+	tcConfig.Host = restConfig.Host + "/k8s/clusters/" + targetCluster.Name
+	tcClient, err := client.New(ctx, &tcConfig)
+	if err != nil {
+		return err
 	}
 	tc := &cluster.Cluster{
-		Obj: targetCluster,
+		Obj:    targetCluster,
+		Client: tcClient,
 	}
-	if err := sc.Populate(ctx, client); err != nil {
+	if err := sc.Populate(ctx, cl); err != nil {
 		return err
 	}
-	if err := tc.Populate(ctx, client); err != nil {
+	if err := tc.Populate(ctx, cl); err != nil {
 		return err
 	}
-	if err := sc.Compare(ctx, client, tc); err != nil {
+	if err := sc.Compare(ctx, cl, tc); err != nil {
 		return err
 	}
 
-	return sc.Status(ctx, client)
+	return sc.Status(ctx, cl)
 }

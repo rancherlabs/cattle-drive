@@ -15,13 +15,12 @@ type Cluster struct {
 	Obj        *v3.Cluster
 	ToMigrate  ToMigrate
 	SystemUser *v3.User
+	Client     *client.Clients
 }
 
 type ToMigrate struct {
-	Projects     []*Project
-	CRTBs        []*ClusterRoleTemplateBinding
-	Roles        []*Role
-	RoleBindings []*RoleBinding
+	Projects []*Project
+	CRTBs    []*ClusterRoleTemplateBinding
 }
 
 // Populate will fill in the objects to be migrated
@@ -44,6 +43,11 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 			}
 		}
 	}
+	// namespaces
+	namespaces, err := c.Client.Namespace.List(v1.ListOptions{})
+	if err != nil {
+		return err
+	}
 	// projects
 	if err := client.Projects.List(ctx, c.Obj.Name, &projects, v1.ListOptions{}); err != nil {
 		return err
@@ -64,30 +68,15 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 			prtb.normalize()
 			prtbList = append(prtbList, prtb)
 		}
-		// roles
-		roles, err := client.Roles.List(item.Name, v1.ListOptions{})
-		if err != nil {
-			return err
+		nsList := []*Namespace{}
+		for _, ns := range namespaces.Items {
+			if projectID, ok := ns.Labels[projectIDLabelAnnotation]; ok && projectID == item.Name {
+				n := newNamespace(ns)
+				n.normalize()
+				nsList = append(nsList, n)
+			}
 		}
-		roleList := []*Role{}
-		for _, item := range roles.Items {
-			role := newRole(item)
-			role.normalize()
-			roleList = append(roleList, role)
-		}
-		// roleBindings
-		roleBindings, err := client.RoleBindings.List(item.Name, v1.ListOptions{})
-		if err != nil {
-			return err
-		}
-		roleBindingList := []*RoleBinding{}
-		for _, item := range roleBindings.Items {
-			role := newRoleBinding(item)
-			role.normalize()
-			roleBindingList = append(roleBindingList, role)
-		}
-
-		p := newProject(item, prtbList, roleList, roleBindingList)
+		p := newProject(item, prtbList, nsList)
 		p.normalize()
 		pList = append(pList, p)
 	}
@@ -104,33 +93,9 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		crtb.normalize()
 		crtbList = append(crtbList, crtb)
 	}
-	// roles
-	roles, err := client.Roles.List(c.Obj.Name, v1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	roleList := []*Role{}
-	for _, item := range roles.Items {
-		role := newRole(item)
-		role.normalize()
-		roleList = append(roleList, role)
-	}
-	// roleBindings
-	roleBindings, err := client.RoleBindings.List(c.Obj.Name, v1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	roleBindingList := []*RoleBinding{}
-	for _, item := range roleBindings.Items {
-		role := newRoleBinding(item)
-		role.normalize()
-		roleBindingList = append(roleBindingList, role)
-	}
 	c.ToMigrate = ToMigrate{
-		Projects:     pList,
-		CRTBs:        crtbList,
-		Roles:        roleList,
-		RoleBindings: roleBindingList,
+		Projects: pList,
+		CRTBs:    crtbList,
 	}
 	return nil
 }
@@ -153,6 +118,17 @@ func (c *Cluster) Compare(ctx context.Context, client *client.Clients, tc *Clust
 							sPrtb.Migrated = true
 							if !reflect.DeepEqual(sPrtb.Obj, tPrtb.Obj) {
 								sPrtb.Diff = true
+							}
+						}
+					}
+				}
+				// namespaces
+				for _, ns := range sProject.Namespaces {
+					for _, tns := range tProject.Namespaces {
+						if ns.Name == tns.Name {
+							ns.Migrated = true
+							if !reflect.DeepEqual(ns.Obj, tns.Obj) {
+								ns.Diff = true
 							}
 						}
 					}
@@ -185,6 +161,10 @@ func (c *Cluster) Status(ctx context.Context, client *client.Clients) error {
 			for _, prtb := range p.PRTBs {
 				util.Print(prtb.Name, prtb.Migrated, prtb.Diff)
 			}
+			fmt.Printf("Project [%s] Namespaces Status:\n", p.Name)
+			for _, ns := range p.Namespaces {
+				util.Print(ns.Name, ns.Migrated, ns.Diff)
+			}
 		}
 	}
 	fmt.Printf("Cluster role template bindings status:\n")
@@ -201,6 +181,26 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 			fmt.Printf("- migrating Project [%s]... ", p.Name)
 			p.mutate(tc)
 			if err := client.Projects.Create(ctx, tc.Obj.Name, p.Obj, nil, v1.CreateOptions{}); err != nil {
+				return err
+			}
+			fmt.Printf("Done.\n")
+		}
+		for _, ns := range p.Namespaces {
+			if !ns.Migrated {
+				fmt.Printf("  - migrating Namespace [%s]... ", ns.Name)
+				ns.mutate(tc.Obj.Name, p.Obj.Name)
+				if _, err := tc.Client.Namespace.Create(ns.Obj); err != nil {
+					return err
+				}
+				fmt.Printf("Done.\n")
+			}
+		}
+	}
+	for _, crtb := range c.ToMigrate.CRTBs {
+		if !crtb.Migrated {
+			fmt.Printf("- migrating CRTB [%s]... ", crtb.Name)
+			crtb.mutate(tc)
+			if err := client.ClusterRoleTemplateBindings.Create(ctx, tc.Obj.Name, crtb.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err
 			}
 			fmt.Printf("Done.\n")
