@@ -7,6 +7,7 @@ import (
 	"galal-hussein/cattle-drive/pkg/util"
 	"reflect"
 
+	v1catalog "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -21,6 +22,8 @@ type Cluster struct {
 type ToMigrate struct {
 	Projects []*Project
 	CRTBs    []*ClusterRoleTemplateBinding
+	// apps related objects
+	ClusterRepos []*ClusterRepo
 }
 
 // Populate will fill in the objects to be migrated
@@ -30,6 +33,7 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		projectRoleTemplateBindings v3.ProjectRoleTemplateBindingList
 		clusterRoleTemplateBindings v3.ClusterRoleTemplateBindingList
 		users                       v3.UserList
+		repos                       v1catalog.ClusterRepoList
 	)
 	// systemUsers
 	if err := client.Users.List(ctx, "", &users, v1.ListOptions{}); err != nil {
@@ -64,6 +68,9 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		}
 		prtbList := []*ProjectRoleTemplateBinding{}
 		for _, item := range projectRoleTemplateBindings.Items {
+			if item.Name == "creator-project-owner" {
+				continue
+			}
 			prtb := newPRTB(item)
 			prtb.normalize()
 			prtbList = append(prtbList, prtb)
@@ -93,9 +100,25 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		crtb.normalize()
 		crtbList = append(crtbList, crtb)
 	}
+	// apps
+	// cluster repos
+	reposList := []*ClusterRepo{}
+	if err := c.Client.ClusterRepos.List(ctx, "", &repos, v1.ListOptions{}); err != nil {
+		return err
+	}
+	for _, item := range repos.Items {
+		repo, isDefault := newClusterRepo(item)
+		if isDefault {
+			continue
+		}
+		repo.normalize()
+		reposList = append(reposList, repo)
+
+	}
 	c.ToMigrate = ToMigrate{
-		Projects: pList,
-		CRTBs:    crtbList,
+		Projects:     pList,
+		CRTBs:        crtbList,
+		ClusterRepos: reposList,
 	}
 	return nil
 }
@@ -110,6 +133,9 @@ func (c *Cluster) Compare(ctx context.Context, client *client.Clients, tc *Clust
 				if !reflect.DeepEqual(sProject.Obj.Spec, tProject.Obj.Spec) {
 					sProject.Diff = true
 					break
+				} else {
+					// its critical to adjust the project name here because its used in different other objects ns/prtbs
+					sProject.Obj.Name = tProject.Obj.Name
 				}
 				// now we check for prtbs related to that project
 				for _, sPrtb := range sProject.PRTBs {
@@ -149,27 +175,43 @@ func (c *Cluster) Compare(ctx context.Context, client *client.Clients, tc *Clust
 			}
 		}
 	}
+
+	for _, sRepo := range c.ToMigrate.ClusterRepos {
+		for _, tRepo := range tc.ToMigrate.ClusterRepos {
+			if sRepo.Name == tRepo.Name {
+				sRepo.Migrated = true
+				if !reflect.DeepEqual(sRepo.Obj.Spec, tRepo.Obj.Spec) {
+					sRepo.Diff = true
+					break
+				}
+			}
+		}
+	}
 	return nil
 }
 
 func (c *Cluster) Status(ctx context.Context, client *client.Clients) error {
 	fmt.Printf("Project status:\n")
 	for _, p := range c.ToMigrate.Projects {
-		util.Print(p.Name, p.Migrated, p.Diff)
+		util.Print(p.Name, p.Migrated, p.Diff, 0)
 		if p.Migrated && !p.Diff {
-			fmt.Printf("Project [%s] PRTB Status:\n", p.Name)
+			fmt.Printf("  -> users permissions:\n")
 			for _, prtb := range p.PRTBs {
-				util.Print(prtb.Name, prtb.Migrated, prtb.Diff)
+				util.Print(prtb.Name, prtb.Migrated, prtb.Diff, 1)
 			}
-			fmt.Printf("Project [%s] Namespaces Status:\n", p.Name)
+			fmt.Printf("  -> namespaces:\n")
 			for _, ns := range p.Namespaces {
-				util.Print(ns.Name, ns.Migrated, ns.Diff)
+				util.Print(ns.Name, ns.Migrated, ns.Diff, 1)
 			}
 		}
 	}
-	fmt.Printf("Cluster role template bindings status:\n")
+	fmt.Printf("Cluster users permissions:\n")
 	for _, crtb := range c.ToMigrate.CRTBs {
-		util.Print(crtb.Name, crtb.Migrated, crtb.Diff)
+		util.Print(crtb.Name, crtb.Migrated, crtb.Diff, 0)
+	}
+	fmt.Printf("Catalog repos:\n")
+	for _, repo := range c.ToMigrate.ClusterRepos {
+		util.Print(repo.Name, repo.Migrated, repo.Diff, 0)
 	}
 	return nil
 }
@@ -184,6 +226,16 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 				return err
 			}
 			fmt.Printf("Done.\n")
+		}
+		for _, prtb := range p.PRTBs {
+			if !prtb.Migrated {
+				fmt.Printf("  - migrating PRTB [%s]... ", prtb.Name)
+				prtb.mutate(tc.Obj.Name, p.Obj.Name)
+				if err := client.ProjectRoleTemplateBindings.Create(ctx, p.Obj.Name, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
+					return err
+				}
+				fmt.Printf("Done.\n")
+			}
 		}
 		for _, ns := range p.Namespaces {
 			if !ns.Migrated {
@@ -201,6 +253,16 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 			fmt.Printf("- migrating CRTB [%s]... ", crtb.Name)
 			crtb.mutate(tc)
 			if err := client.ClusterRoleTemplateBindings.Create(ctx, tc.Obj.Name, crtb.Obj, nil, v1.CreateOptions{}); err != nil {
+				return err
+			}
+			fmt.Printf("Done.\n")
+		}
+	}
+	for _, repo := range c.ToMigrate.ClusterRepos {
+		if !repo.Migrated {
+			fmt.Printf("- migrating catalog repo [%s]... ", repo.Name)
+			repo.mutate()
+			if err := tc.Client.ClusterRepos.Create(ctx, tc.Obj.Name, repo.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err
 			}
 			fmt.Printf("Done.\n")

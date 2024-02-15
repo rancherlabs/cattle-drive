@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"os"
+	"strings"
 )
 
 const (
@@ -15,15 +16,16 @@ const (
 	characters   = "abcdefghijklmnopqrstuvwxyz0123456789"
 )
 
-func Print(resource string, check, diff bool) {
+func Print(resource string, check, diff bool, indent int) {
+	indentStr := strings.Repeat("\t", indent)
 	if check {
 		if diff {
-			fmt.Fprintf(os.Stdout, "\033[1;31m- [%s] %s %s\033[0m\n", resource, wrongMark, wrongSpec)
+			fmt.Fprintf(os.Stdout, "%s \033[1;31m- [%s] %s %s\033[0m\n", indentStr, resource, wrongMark, wrongSpec)
 		} else {
-			fmt.Fprintf(os.Stdout, "\033[1;32m- [%s] %s\033[0m\n", resource, checkMark)
+			fmt.Fprintf(os.Stdout, "%s \033[1;32m- [%s] %s\033[0m\n", indentStr, resource, checkMark)
 		}
 	} else {
-		fmt.Fprintf(os.Stdout, "\033[1;31m- [%s] %s\033[0m\n", resource, wrongMark)
+		fmt.Fprintf(os.Stdout, "%s \033[1;31m- [%s] %s\033[0m\n", indentStr, resource, wrongMark)
 	}
 }
 

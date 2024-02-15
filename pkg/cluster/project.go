@@ -39,12 +39,13 @@ func (p *Project) normalize() {
 
 // mutate will change the project object to be suitable for recreation to the target cluster
 func (p *Project) mutate(c *Cluster) {
+	newProjectName := "p-" + util.GenerateName(5)
 	p.Obj.Spec.ClusterName = c.Obj.Name
 	p.Obj.Namespace = c.Obj.Name
 	p.Obj.Status = v3.ProjectStatus{}
 	p.Obj.SetFinalizers(nil)
 	p.Obj.SetResourceVersion("")
-	p.Obj.SetName("p-" + util.GenerateName(5))
+	p.Obj.SetName(newProjectName)
 	for annotation := range p.Obj.Annotations {
 		if strings.Contains(annotation, lifeCycleAnnotationPrefix) {
 			delete(p.Obj.Annotations, annotation)
