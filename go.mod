@@ -29,19 +29,36 @@ replace (
 )
 
 require (
-	github.com/rancher/norman v0.0.0-20230831160711-5de27f66385d
+	github.com/charmbracelet/lipgloss v0.9.1
 	github.com/rancher/rancher/pkg/apis v0.0.0-20230915232223-a9ea4ce4a5ba
-	github.com/rancher/rancher/pkg/client v0.0.0-20240205102821-ed248439462a
 	github.com/rancher/wrangler v1.1.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli v1.22.14
 	k8s.io/client-go v12.0.0+incompatible
+)
+
+require (
+	github.com/atotto/clipboard v0.1.4 // indirect
+	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
+	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mattn/go-isatty v0.0.18 // indirect
+	github.com/mattn/go-localereader v0.0.1 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
+	github.com/muesli/ansi v0.0.0-20211018074035-2e021307bc4b // indirect
+	github.com/muesli/cancelreader v0.2.2 // indirect
+	github.com/muesli/reflow v0.3.0 // indirect
+	github.com/muesli/termenv v0.15.2 // indirect
+	github.com/rancher/norman v0.0.0-20230831160711-5de27f66385d // indirect
+	github.com/rivo/uniseg v0.4.6 // indirect
+	github.com/sahilm/fuzzy v0.1.1-0.20230530133925-c48e322e2a8f // indirect
 )
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/charmbracelet/bubbles v0.18.0
+	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.2 // indirect
@@ -57,7 +74,6 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.5.0 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -75,11 +91,11 @@ require (
 	github.com/rancher/eks-operator v1.4.0-rc1 // indirect
 	github.com/rancher/fleet/pkg/apis v0.0.0-20231017140638-93432f288e79 // indirect
 	github.com/rancher/gke-operator v1.3.0-rc2 // indirect
-	github.com/rancher/lasso v0.0.0-20230830164424-d684fdeb6f29 // indirect
+	github.com/rancher/lasso v0.0.0-20230830164424-d684fdeb6f29
 	github.com/rancher/rke v1.5.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/urfave/cli/v2 v2.27.1 // indirect
+	github.com/urfave/cli/v2 v2.27.1
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
@@ -93,9 +109,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.28.6 // indirect
+	k8s.io/api v0.28.6
 	k8s.io/apiextensions-apiserver v0.27.5 // indirect
-	k8s.io/apimachinery v0.28.6 // indirect
+	k8s.io/apimachinery v0.28.6
 	k8s.io/apiserver v0.28.4 // indirect
 	k8s.io/component-base v0.28.4 // indirect
 	k8s.io/klog v1.0.0 // indirect

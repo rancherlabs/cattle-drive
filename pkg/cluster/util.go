@@ -1,4 +1,4 @@
-package util
+package cluster
 
 import (
 	"crypto/rand"
@@ -8,15 +8,13 @@ import (
 )
 
 const (
-	checkMark    = "\u2714"
-	wrongMark    = "\u2718"
-	wrongSpec    = "(Wrong fields)"
-	correctColor = "\033[1;34m%s\033[0m"
-	errColor     = "\033[1;31m%s\033[0m"
-	characters   = "abcdefghijklmnopqrstuvwxyz0123456789"
+	checkMark  = "\u2714"
+	wrongMark  = "\u2718"
+	wrongSpec  = "(Wrong fields)"
+	characters = "abcdefghijklmnopqrstuAppsvwxyz0123456789"
 )
 
-func Print(resource string, check, diff bool, indent int) {
+func print(resource string, check, diff bool, indent int) {
 	indentStr := strings.Repeat("\t", indent)
 	if check {
 		if diff {
@@ -29,7 +27,7 @@ func Print(resource string, check, diff bool, indent int) {
 	}
 }
 
-func GenerateName(length int) string {
+func generateName(length int) string {
 	bytes := make([]byte, length)
 	_, err := rand.Read(bytes)
 	if err != nil {

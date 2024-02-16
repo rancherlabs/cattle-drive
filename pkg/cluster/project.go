@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"galal-hussein/cattle-drive/pkg/util"
 	"strings"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
@@ -39,7 +38,7 @@ func (p *Project) normalize() {
 
 // mutate will change the project object to be suitable for recreation to the target cluster
 func (p *Project) mutate(c *Cluster) {
-	newProjectName := "p-" + util.GenerateName(5)
+	newProjectName := "p-" + generateName(5)
 	p.Obj.Spec.ClusterName = c.Obj.Name
 	p.Obj.Namespace = c.Obj.Name
 	p.Obj.Status = v3.ProjectStatus{}

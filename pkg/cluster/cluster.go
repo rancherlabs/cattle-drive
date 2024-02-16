@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"galal-hussein/cattle-drive/pkg/client"
-	"galal-hussein/cattle-drive/pkg/util"
 	"reflect"
 
 	v1catalog "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
@@ -24,6 +23,7 @@ type ToMigrate struct {
 	CRTBs    []*ClusterRoleTemplateBinding
 	// apps related objects
 	ClusterRepos []*ClusterRepo
+	Apps         []*App
 }
 
 // Populate will fill in the objects to be migrated
@@ -115,6 +115,7 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		reposList = append(reposList, repo)
 
 	}
+
 	c.ToMigrate = ToMigrate{
 		Projects:     pList,
 		CRTBs:        crtbList,
@@ -193,25 +194,25 @@ func (c *Cluster) Compare(ctx context.Context, client *client.Clients, tc *Clust
 func (c *Cluster) Status(ctx context.Context, client *client.Clients) error {
 	fmt.Printf("Project status:\n")
 	for _, p := range c.ToMigrate.Projects {
-		util.Print(p.Name, p.Migrated, p.Diff, 0)
+		print(p.Name, p.Migrated, p.Diff, 0)
 		if p.Migrated && !p.Diff {
 			fmt.Printf("  -> users permissions:\n")
 			for _, prtb := range p.PRTBs {
-				util.Print(prtb.Name, prtb.Migrated, prtb.Diff, 1)
+				print(prtb.Name, prtb.Migrated, prtb.Diff, 1)
 			}
 			fmt.Printf("  -> namespaces:\n")
 			for _, ns := range p.Namespaces {
-				util.Print(ns.Name, ns.Migrated, ns.Diff, 1)
+				print(ns.Name, ns.Migrated, ns.Diff, 1)
 			}
 		}
 	}
 	fmt.Printf("Cluster users permissions:\n")
 	for _, crtb := range c.ToMigrate.CRTBs {
-		util.Print(crtb.Name, crtb.Migrated, crtb.Diff, 0)
+		print(crtb.Name, crtb.Migrated, crtb.Diff, 0)
 	}
 	fmt.Printf("Catalog repos:\n")
 	for _, repo := range c.ToMigrate.ClusterRepos {
-		util.Print(repo.Name, repo.Migrated, repo.Diff, 0)
+		print(repo.Name, repo.Migrated, repo.Diff, 0)
 	}
 	return nil
 }
@@ -258,6 +259,7 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 			fmt.Printf("Done.\n")
 		}
 	}
+	// catalog repos
 	for _, repo := range c.ToMigrate.ClusterRepos {
 		if !repo.Migrated {
 			fmt.Printf("- migrating catalog repo [%s]... ", repo.Name)
@@ -268,5 +270,11 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 			fmt.Printf("Done.\n")
 		}
 	}
+
+	return nil
+}
+
+func (c *Cluster) Interactive(ctx context.Context, client *client.Clients, tc *Cluster) error {
+
 	return nil
 }
