@@ -8,18 +8,22 @@ import (
 )
 
 type ProjectRoleTemplateBinding struct {
-	Name     string
-	Obj      *v3.ProjectRoleTemplateBinding
-	Migrated bool
-	Diff     bool
+	Name               string
+	Obj                *v3.ProjectRoleTemplateBinding
+	ProjectName        string
+	ProjectDisplayName string
+	Migrated           bool
+	Diff               bool
 }
 
-func newPRTB(obj v3.ProjectRoleTemplateBinding) *ProjectRoleTemplateBinding {
+func newPRTB(obj v3.ProjectRoleTemplateBinding, projectName, projectDisplayName string) *ProjectRoleTemplateBinding {
 	return &ProjectRoleTemplateBinding{
-		Name:     obj.Name,
-		Obj:      obj.DeepCopy(),
-		Migrated: false,
-		Diff:     false,
+		Name:               obj.Name,
+		Obj:                obj.DeepCopy(),
+		Migrated:           false,
+		Diff:               false,
+		ProjectName:        projectName,
+		ProjectDisplayName: projectDisplayName,
 	}
 }
 
@@ -30,7 +34,7 @@ func (p *ProjectRoleTemplateBinding) normalize() {
 	p.Obj.ProjectName = ""
 }
 
-func (p *ProjectRoleTemplateBinding) mutate(clusterName, projectName string) {
+func (p *ProjectRoleTemplateBinding) Mutate(clusterName, projectName string) {
 	p.Obj.ProjectName = clusterName + ":" + projectName
 	p.Obj.SetName(p.Name)
 	p.Obj.SetNamespace(projectName)

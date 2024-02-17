@@ -28,7 +28,7 @@ func newClusterRepo(obj v1.ClusterRepo) (*ClusterRepo, bool) {
 func (c *ClusterRepo) normalize() {
 }
 
-func (c *ClusterRepo) mutate() {
+func (c *ClusterRepo) Mutate() {
 	c.Obj.SetFinalizers(nil)
 	c.Obj.SetResourceVersion("")
 	c.Obj.Status = v1.RepoStatus{}

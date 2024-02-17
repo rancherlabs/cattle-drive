@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type mode int
@@ -28,7 +27,8 @@ type item struct {
 	title   string
 	desc    string
 	objType string
-	obj     runtime.Object
+	obj     interface{}
+	status  constants.MigrationStatus
 }
 
 func (i item) Title() string       { return i.title }
@@ -65,9 +65,9 @@ func InitCluster() (tea.Model, tea.Cmd) {
 
 func newClusterList() []list.Item {
 	items := []list.Item{
-		item{title: "Projects", desc: "Projects objects", objType: "project", obj: nil},
-		item{title: "Cluster user permissions", desc: "user permissions for the cluster (CRTB)", objType: "crtb", obj: nil},
-		item{title: "Catalog repos", desc: "Cluster apps repos", objType: "repo", obj: nil},
+		item{title: "Projects", desc: "Projects objects", objType: constants.ProjectsType, obj: nil},
+		item{title: "Cluster user permissions", desc: "user permissions for the cluster (CRTB)", objType: constants.CRTBsType, obj: nil},
+		item{title: "Catalog repos", desc: "Cluster apps repos", objType: constants.ReposType, obj: nil},
 	}
 	return items
 }
@@ -82,44 +82,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		top, right, bottom, left := constants.DocStyle.GetMargin()
 		m.list.SetSize(msg.Width-left-right, msg.Height-top-bottom-1)
 	case tea.KeyMsg:
-		if m.input.Focused() {
-			if key.Matches(msg, constants.Keymap.Enter) {
-				if m.mode == migrate {
-					// cmds = append(cmds, createProjectCmd(m.input.Value(), constants.Pr))
-					// todo migrate object
-				}
-				m.input.SetValue("")
-				m.mode = nav
-				m.input.Blur()
-			}
-			if key.Matches(msg, constants.Keymap.Back) {
-				m.input.SetValue("")
-				m.mode = nav
-				m.input.Blur()
-			}
-			// only log keypresses for the input field when it's focused
-			m.input, cmd = m.input.Update(msg)
-			cmds = append(cmds, cmd)
-		} else {
-			switch {
-			case key.Matches(msg, constants.Keymap.Migrate):
-				m.mode = migrate
-				m.input.Focus()
-				cmd = textinput.Blink
-			case key.Matches(msg, constants.Keymap.Quit):
-				m.quitting = true
-				return m, tea.Quit
-			case key.Matches(msg, constants.Keymap.Enter):
-				// activeProject := m.list.SelectedItem().(project.Project)
-				// entry := InitEntry(constants.Er, activeProject.ID, constants.P)
-				// return entry.Update(constants.WindowSize)
+		switch {
+		case key.Matches(msg, constants.Keymap.Migrate):
+			m.mode = migrate
+			m.input.Focus()
+			cmd = textinput.Blink
+		case key.Matches(msg, constants.Keymap.Quit):
+			m.quitting = true
+			return m, tea.Quit
+		case key.Matches(msg, constants.Keymap.Enter):
+			entry := InitObjects(m.list.SelectedItem().(item), constants.P)
+			return entry.Update(constants.WindowSize)
 
-			default:
-				m.list, cmd = m.list.Update(msg)
-			}
-			cmds = append(cmds, cmd)
+		default:
+			m.list, cmd = m.list.Update(msg)
 		}
+		cmds = append(cmds, cmd)
 	}
+
 	return m, tea.Batch(cmds...)
 }
 

@@ -108,5 +108,5 @@ func migrate(clx *cli.Context) error {
 		return err
 	}
 
-	return tui.StartTea(sc, tc)
+	return tui.StartTea(sc, tc, cl)
 }

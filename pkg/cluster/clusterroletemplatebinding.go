@@ -39,7 +39,7 @@ func (c *ClusterRoleTemplateBinding) normalize() {
 	c.Obj.ClusterName = ""
 }
 
-func (c *ClusterRoleTemplateBinding) mutate(tc *Cluster) {
+func (c *ClusterRoleTemplateBinding) Mutate(tc *Cluster) {
 	c.Obj.ClusterName = tc.Obj.Name
 	c.Obj.SetName(c.Name)
 	c.Obj.SetNamespace(tc.Obj.Name)

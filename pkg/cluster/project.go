@@ -12,6 +12,7 @@ const (
 
 type Project struct {
 	Name       string
+	TargetName string
 	Obj        *v3.Project
 	Migrated   bool
 	Diff       bool
@@ -37,7 +38,7 @@ func (p *Project) normalize() {
 }
 
 // mutate will change the project object to be suitable for recreation to the target cluster
-func (p *Project) mutate(c *Cluster) {
+func (p *Project) Mutate(c *Cluster) {
 	newProjectName := "p-" + generateName(5)
 	p.Obj.Spec.ClusterName = c.Obj.Name
 	p.Obj.Namespace = c.Obj.Name

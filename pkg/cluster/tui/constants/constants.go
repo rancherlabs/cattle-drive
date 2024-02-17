@@ -1,6 +1,7 @@
 package constants
 
 import (
+	"galal-hussein/cattle-drive/pkg/client"
 	"galal-hussein/cattle-drive/pkg/cluster"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -9,14 +10,37 @@ import (
 )
 
 /* CONSTANTS */
+const (
+	CheckMark                      = "\u2714"
+	WrongMark                      = "\u2718"
+	WrongSpec                      = "(Wrong fields)"
+	MigratedStatus MigrationStatus = iota
+	WrongSpecStatus
+	NotMigratedStatus
+	/* Object Types */
+	ProjectsType   = "projects"
+	CRTBsType      = "crtbs"
+	NamespacesType = "namespaces"
+	PRTBsType      = "prtbs"
+	ReposType      = "repos"
+	ProjectType    = "project"
+	CRTBType       = "crtb"
+	NamespaceType  = "namespace"
+	PRTBType       = "prtb"
+	RepoType       = "repo"
+)
+
+type MigrationStatus int
 
 var (
 	// P the current tea program
 	P *tea.Program
-	// Source Cluster
+	// SC the source cluster
 	SC *cluster.Cluster
-	// Target Cluster
+	// TC the target cluster
 	TC *cluster.Cluster
+	// Local Client
+	Lclient *client.Clients
 	// WindowSize store the size of the terminal window
 	WindowSize tea.WindowSizeMsg
 )

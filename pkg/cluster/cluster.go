@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"galal-hussein/cattle-drive/pkg/client"
 	"reflect"
@@ -57,13 +58,13 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		return err
 	}
 	pList := []*Project{}
-	for _, item := range projects.Items {
+	for _, p := range projects.Items {
 		// skip default projects before listing their prtb or roles
-		if item.Spec.DisplayName == "Default" || item.Spec.DisplayName == "System" {
+		if p.Spec.DisplayName == "Default" || p.Spec.DisplayName == "System" {
 			continue
 		}
 		// prtbs
-		if err := client.ProjectRoleTemplateBindings.List(ctx, item.Name, &projectRoleTemplateBindings, v1.ListOptions{}); err != nil {
+		if err := client.ProjectRoleTemplateBindings.List(ctx, p.Name, &projectRoleTemplateBindings, v1.ListOptions{}); err != nil {
 			return err
 		}
 		prtbList := []*ProjectRoleTemplateBinding{}
@@ -71,19 +72,19 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 			if item.Name == "creator-project-owner" {
 				continue
 			}
-			prtb := newPRTB(item)
+			prtb := newPRTB(item, "", p.Spec.DisplayName)
 			prtb.normalize()
 			prtbList = append(prtbList, prtb)
 		}
 		nsList := []*Namespace{}
 		for _, ns := range namespaces.Items {
-			if projectID, ok := ns.Labels[projectIDLabelAnnotation]; ok && projectID == item.Name {
-				n := newNamespace(ns)
+			if projectID, ok := ns.Labels[projectIDLabelAnnotation]; ok && projectID == p.Name {
+				n := newNamespace(ns, "", p.Spec.DisplayName)
 				n.normalize()
 				nsList = append(nsList, n)
 			}
 		}
-		p := newProject(item, prtbList, nsList)
+		p := newProject(p, prtbList, nsList)
 		p.normalize()
 		pList = append(pList, p)
 	}
@@ -137,6 +138,12 @@ func (c *Cluster) Compare(ctx context.Context, client *client.Clients, tc *Clust
 				} else {
 					// its critical to adjust the project name here because its used in different other objects ns/prtbs
 					sProject.Obj.Name = tProject.Obj.Name
+					for _, sPRTB := range sProject.PRTBs {
+						sPRTB.ProjectName = tProject.Obj.Name
+					}
+					for _, ns := range sProject.Namespaces {
+						ns.ProjectName = tProject.Obj.Name
+					}
 				}
 				// now we check for prtbs related to that project
 				for _, sPrtb := range sProject.PRTBs {
@@ -222,17 +229,20 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 	for _, p := range c.ToMigrate.Projects {
 		if !p.Migrated {
 			fmt.Printf("- migrating Project [%s]... ", p.Name)
-			p.mutate(tc)
+			p.Mutate(tc)
 			if err := client.Projects.Create(ctx, tc.Obj.Name, p.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err
 			}
 			fmt.Printf("Done.\n")
 		}
+
 		for _, prtb := range p.PRTBs {
 			if !prtb.Migrated {
 				fmt.Printf("  - migrating PRTB [%s]... ", prtb.Name)
-				prtb.mutate(tc.Obj.Name, p.Obj.Name)
-				if err := client.ProjectRoleTemplateBindings.Create(ctx, p.Obj.Name, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
+				// if project is already migrated then we find out the new project name in the mgirated cluster
+
+				prtb.Mutate(tc.Obj.Name, prtb.ProjectName)
+				if err := client.ProjectRoleTemplateBindings.Create(ctx, prtb.ProjectName, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
 					return err
 				}
 				fmt.Printf("Done.\n")
@@ -241,7 +251,7 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 		for _, ns := range p.Namespaces {
 			if !ns.Migrated {
 				fmt.Printf("  - migrating Namespace [%s]... ", ns.Name)
-				ns.mutate(tc.Obj.Name, p.Obj.Name)
+				ns.Mutate(tc.Obj.Name, ns.ProjectName)
 				if _, err := tc.Client.Namespace.Create(ns.Obj); err != nil {
 					return err
 				}
@@ -252,7 +262,7 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 	for _, crtb := range c.ToMigrate.CRTBs {
 		if !crtb.Migrated {
 			fmt.Printf("- migrating CRTB [%s]... ", crtb.Name)
-			crtb.mutate(tc)
+			crtb.Mutate(tc)
 			if err := client.ClusterRoleTemplateBindings.Create(ctx, tc.Obj.Name, crtb.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err
 			}
@@ -263,7 +273,7 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 	for _, repo := range c.ToMigrate.ClusterRepos {
 		if !repo.Migrated {
 			fmt.Printf("- migrating catalog repo [%s]... ", repo.Name)
-			repo.mutate()
+			repo.Mutate()
 			if err := tc.Client.ClusterRepos.Create(ctx, tc.Obj.Name, repo.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err
 			}
@@ -274,7 +284,15 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 	return nil
 }
 
-func (c *Cluster) Interactive(ctx context.Context, client *client.Clients, tc *Cluster) error {
-
-	return nil
+func NewProjectName(ctx context.Context, targetClusterName, oldProjectName string, client *client.Clients) (string, error) {
+	var projects v3.ProjectList
+	if err := client.Projects.List(ctx, targetClusterName, &projects, v1.ListOptions{}); err != nil {
+		return "", err
+	}
+	for _, project := range projects.Items {
+		if oldProjectName == project.Spec.DisplayName {
+			return project.Name, nil
+		}
+	}
+	return "", errors.New("failed to find project with the name " + oldProjectName)
 }

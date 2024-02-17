@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"galal-hussein/cattle-drive/pkg/client"
 	"galal-hussein/cattle-drive/pkg/cluster"
 	"galal-hussein/cattle-drive/pkg/cluster/tui/constants"
 	"log"
@@ -10,7 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func StartTea(sc, tc *cluster.Cluster) error {
+func StartTea(sc, tc *cluster.Cluster, client *client.Clients) error {
 	if f, err := tea.LogToFile("debug.log", "help"); err != nil {
 		fmt.Println("Couldn't open a file for logging:", err)
 		os.Exit(1)
@@ -24,6 +25,7 @@ func StartTea(sc, tc *cluster.Cluster) error {
 	}
 	constants.SC = sc
 	constants.TC = tc
+	constants.Lclient = client
 
 	m, _ := InitCluster() // TODO: can we acknowledge this error
 	constants.P = tea.NewProgram(m, tea.WithAltScreen())
