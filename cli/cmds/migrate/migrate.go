@@ -97,6 +97,8 @@ func migrate(clx *cli.Context) error {
 		Obj:    targetCluster,
 		Client: tcClient,
 	}
+	cmds.Spinner.Prefix = "initiating source and target clusters objects.. "
+	cmds.Spinner.Start()
 	if err := sc.Populate(ctx, cl); err != nil {
 		return err
 	}
@@ -106,6 +108,6 @@ func migrate(clx *cli.Context) error {
 	if err := sc.Compare(ctx, cl, tc); err != nil {
 		return err
 	}
-
+	cmds.Spinner.Stop()
 	return sc.Migrate(ctx, cl, tc)
 }
