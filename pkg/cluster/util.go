@@ -5,13 +5,17 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/briandowns/spinner"
 )
+
+var Spinner *spinner.Spinner
 
 const (
 	checkMark  = "\u2714"
 	wrongMark  = "\u2718"
 	wrongSpec  = "(Wrong fields)"
-	characters = "abcdefghijklmnopqrstuAppsvwxyz0123456789"
+	characters = "abcdefghijklmnopqrstuvwxyz0123456789"
 )
 
 func print(resource string, check, diff bool, indent int) {
