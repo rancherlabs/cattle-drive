@@ -4,7 +4,6 @@ import (
 	"galal-hussein/cattle-drive/pkg/client"
 	"galal-hussein/cattle-drive/pkg/cluster"
 
-	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -48,31 +47,16 @@ var (
 )
 
 /* STYLING */
-var DocStyle = lipgloss.NewStyle().Margin(0, 2).Foreground(lipgloss.Color("241"))
+var (
+	DocStyle = lipgloss.NewStyle().Margin(0, 2).Foreground(lipgloss.Color("241"))
 
-type keymap struct {
-	Enter   key.Binding
-	Migrate key.Binding
-	Back    key.Binding
-	Quit    key.Binding
-}
+	AppStyle = lipgloss.NewStyle().Padding(1, 2)
 
-// Keymap reusable key mappings shared across models
-var Keymap = keymap{
-	Enter: key.NewBinding(
-		key.WithKeys("enter"),
-		key.WithHelp("enter", "select"),
-	),
-	Migrate: key.NewBinding(
-		key.WithKeys("m"),
-		key.WithHelp("m", "migrate"),
-	),
-	Back: key.NewBinding(
-		key.WithKeys("esc"),
-		key.WithHelp("esc", "main menu"),
-	),
-	Quit: key.NewBinding(
-		key.WithKeys("ctrl+c", "q"),
-		key.WithHelp("ctrl+c/q", "quit"),
-	),
-}
+	TitleStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FFFDF5")).
+			Background(lipgloss.Color("#25A065")).
+			Padding(0, 1)
+	StatusMessageStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
+				Render
+)

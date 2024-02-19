@@ -91,18 +91,15 @@ func InitObjects(i item) *Objects {
 			items = append(items, i)
 		}
 	}
-	m.list = list.New(items, list.NewDefaultDelegate(), 8, 8)
+	delegate := newItemDelegate(delegateKeys)
+	objList := list.New(items, delegate, 8, 8)
+	objList.Styles.Title = constants.TitleStyle
+	m.list = objList
 	if constants.WindowSize.Height != 0 {
 		top, right, bottom, left := constants.DocStyle.GetMargin()
 		m.list.SetSize(constants.WindowSize.Width-left-right, constants.WindowSize.Height-top-bottom-1)
 	}
 	m.list.Title = title
-	m.list.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{
-			constants.Keymap.Migrate,
-			constants.Keymap.Back,
-		}
-	}
 	return &m
 }
 
@@ -124,12 +121,12 @@ func (m Objects) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tickCmd()
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, constants.Keymap.Quit):
+		case key.Matches(msg, delegateKeys.Quit):
 			m.quitting = true
 			return m, tea.Quit
-		case key.Matches(msg, constants.Keymap.Back):
+		case key.Matches(msg, delegateKeys.Back):
 			return InitCluster()
-		case key.Matches(msg, constants.Keymap.Enter):
+		case key.Matches(msg, delegateKeys.Enter):
 			if m.list.SelectedItem() == nil {
 				return m, tea.Batch(cmds...)
 			}
@@ -142,7 +139,7 @@ func (m Objects) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				entry := InitObjects(item)
 				return entry.Update(constants.WindowSize)
 			}
-		case key.Matches(msg, constants.Keymap.Migrate):
+		case key.Matches(msg, delegateKeys.Migrate):
 			item := m.list.SelectedItem().(item)
 			if item.status == constants.NotMigratedStatus {
 				m.mode = migrate
@@ -165,7 +162,7 @@ func (m Objects) View() string {
 	}
 	if m.mode == migrate {
 		pad := strings.Repeat(" ", 2)
-		return "Waiting for object [" + m.activeObject + "] to be migrated\n\n" + pad + m.progress.ViewAs(m.percent) + "\n\n" + pad
+		return "\n\n Waiting for object [" + m.activeObject + "] to be migrated\n\n" + pad + m.progress.ViewAs(m.percent) + "\n\n" + pad
 	}
 	return constants.DocStyle.Render(m.list.View() + "\n")
 }

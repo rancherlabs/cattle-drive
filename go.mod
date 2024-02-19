@@ -29,6 +29,7 @@ replace (
 )
 
 require (
+	github.com/briandowns/spinner v1.23.0
 	github.com/charmbracelet/lipgloss v0.9.1
 	github.com/rancher/rancher/pkg/apis v0.0.0-20230915232223-a9ea4ce4a5ba
 	github.com/rancher/wrangler v1.1.1
@@ -39,7 +40,6 @@ require (
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/briandowns/spinner v1.23.0 // indirect
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
 	github.com/fatih/color v1.7.0 // indirect
