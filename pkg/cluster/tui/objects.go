@@ -4,32 +4,40 @@ import (
 	"context"
 	"galal-hussein/cattle-drive/pkg/cluster"
 	"galal-hussein/cattle-drive/pkg/cluster/tui/constants"
+	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type (
-	errMsg struct{ error }
+	errMsg  struct{ error }
+	tickMsg time.Time
 )
 
 type Objects struct {
-	mode     mode
-	list     list.Model
-	quitting bool
+	mode         mode
+	list         list.Model
+	quitting     bool
+	percent      float64
+	progress     progress.Model
+	activeObject string
 }
 
 // Init run any intial IO on program start
 func (m Objects) Init() tea.Cmd {
-	return nil
+	return tickCmd()
 }
 
 func InitObjects(i item) *Objects {
+	prog := progress.New(progress.WithSolidFill("#04B575"))
 	var title string
 	items := []list.Item{}
-	m := Objects{mode: nav}
+	m := Objects{mode: nav, progress: prog}
 	switch i.objType {
 	case "project":
 		// in case of individual project then we will list namespaces and prtbs
@@ -107,6 +115,13 @@ func (m Objects) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		constants.WindowSize = msg
 		top, right, bottom, left := constants.DocStyle.GetMargin()
 		m.list.SetSize(msg.Width-left-right, msg.Height-top-bottom-1)
+	case tickMsg:
+		m.percent += 0.1
+		if m.percent > 1.0 || m.mode == migrated {
+			m.percent = 1.0
+			return InitCluster()
+		}
+		return m, tickCmd()
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, constants.Keymap.Quit):
@@ -128,13 +143,13 @@ func (m Objects) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return entry.Update(constants.WindowSize)
 			}
 		case key.Matches(msg, constants.Keymap.Migrate):
-			m.mode = migrate
-			var err error
 			item := m.list.SelectedItem().(item)
-			if _, err = migrateObject(context.Background(), item); err != nil {
-				panic(err)
+			if item.status == constants.NotMigratedStatus {
+				m.mode = migrate
+				m.activeObject = item.objType + "/" + item.title
+				go m.migrateObject(context.Background(), item)
+				return m, tickCmd()
 			}
-			return InitCluster()
 		default:
 			m.list, cmd = m.list.Update(msg)
 		}
@@ -148,7 +163,10 @@ func (m Objects) View() string {
 	if m.quitting {
 		return ""
 	}
-
+	if m.mode == migrate {
+		pad := strings.Repeat(" ", 2)
+		return "Waiting for object [" + m.activeObject + "] to be migrated\n\n" + pad + m.progress.ViewAs(m.percent) + "\n\n" + pad
+	}
 	return constants.DocStyle.Render(m.list.View() + "\n")
 }
 
@@ -163,7 +181,7 @@ func status(name string, migrated, diff bool) (string, constants.MigrationStatus
 	return name + " " + constants.WrongMark, constants.NotMigratedStatus
 }
 
-func migrateObject(ctx context.Context, i item) (tea.Msg, error) {
+func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 	var msg string
 	switch i.objType {
 	case constants.ProjectType:
@@ -230,6 +248,7 @@ func migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 		}
 
 	}
+	m.mode = migrated
 	return msg, nil
 }
 
@@ -244,4 +263,10 @@ func updateClusters(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func tickCmd() tea.Cmd {
+	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
+		return tickMsg(t)
+	})
 }
