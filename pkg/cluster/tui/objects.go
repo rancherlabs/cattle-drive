@@ -7,10 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/progress"
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,8 +19,6 @@ type Objects struct {
 	mode     mode
 	list     list.Model
 	quitting bool
-	spinner  spinner.Model
-	progress progress.Model
 }
 
 // Init run any intial IO on program start
@@ -31,17 +26,10 @@ func (m Objects) Init() tea.Cmd {
 	return nil
 }
 
-func InitObjects(i item, p *tea.Program) *Objects {
+func InitObjects(i item) *Objects {
 	var title string
 	items := []list.Item{}
-	pr := progress.New(
-		progress.WithDefaultGradient(),
-		progress.WithWidth(40),
-		progress.WithoutPercentage(),
-	)
-	s := spinner.New()
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
-	m := Objects{mode: nav, progress: pr, spinner: s}
+	m := Objects{mode: nav}
 	switch i.objType {
 	case "project":
 		// in case of individual project then we will list namespaces and prtbs
@@ -120,7 +108,6 @@ func (m Objects) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		top, right, bottom, left := constants.DocStyle.GetMargin()
 		m.list.SetSize(msg.Width-left-right, msg.Height-top-bottom-1)
 	case tea.KeyMsg:
-
 		switch {
 		case key.Matches(msg, constants.Keymap.Quit):
 			m.quitting = true
@@ -128,25 +115,26 @@ func (m Objects) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, constants.Keymap.Back):
 			return InitCluster()
 		case key.Matches(msg, constants.Keymap.Enter):
+			if m.list.SelectedItem() == nil {
+				return m, tea.Batch(cmds...)
+			}
 			item := m.list.SelectedItem().(item)
 			if item.objType == constants.ProjectType && item.status == constants.MigratedStatus {
-				entry := InitObjects(item, constants.P)
+				entry := InitObjects(item)
 				return entry.Update(constants.WindowSize)
 			}
 			if item.objType == constants.PRTBsType || item.objType == constants.NamespacesType {
-				entry := InitObjects(item, constants.P)
+				entry := InitObjects(item)
 				return entry.Update(constants.WindowSize)
 			}
 		case key.Matches(msg, constants.Keymap.Migrate):
+			m.mode = migrate
 			var err error
 			item := m.list.SelectedItem().(item)
 			if _, err = migrateObject(context.Background(), item); err != nil {
 				panic(err)
 			}
-			item.objType = item.objType + "s"
-			entry := InitObjects(item, constants.P)
-			return entry.Update(constants.WindowSize)
-
+			return InitCluster()
 		default:
 			m.list, cmd = m.list.Update(msg)
 		}
@@ -160,6 +148,7 @@ func (m Objects) View() string {
 	if m.quitting {
 		return ""
 	}
+
 	return constants.DocStyle.Render(m.list.View() + "\n")
 }
 

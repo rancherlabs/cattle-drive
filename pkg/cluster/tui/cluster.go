@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -14,12 +13,12 @@ type mode int
 const (
 	nav mode = iota
 	migrate
+	migrated
 )
 
 type Model struct {
 	mode     mode
 	list     list.Model
-	input    textinput.Model
 	quitting bool
 }
 
@@ -41,14 +40,8 @@ func (m Model) Init() tea.Cmd {
 }
 
 func InitCluster() (tea.Model, tea.Cmd) {
-	input := textinput.New()
-	input.Prompt = "$ "
-	input.Placeholder = "Project name..."
-	input.CharLimit = 250
-	input.Width = 50
-
 	items := newClusterList()
-	m := Model{mode: nav, list: list.New(items, list.NewDefaultDelegate(), 8, 8), input: input}
+	m := Model{mode: nav, list: list.New(items, list.NewDefaultDelegate(), 8, 8)}
 	if constants.WindowSize.Height != 0 {
 		top, right, bottom, left := constants.DocStyle.GetMargin()
 		m.list.SetSize(constants.WindowSize.Width-left-right, constants.WindowSize.Height-top-bottom-1)
@@ -65,9 +58,9 @@ func InitCluster() (tea.Model, tea.Cmd) {
 
 func newClusterList() []list.Item {
 	items := []list.Item{
-		item{title: "Projects", desc: "Projects objects", objType: constants.ProjectsType, obj: nil},
-		item{title: "Cluster user permissions", desc: "user permissions for the cluster (CRTB)", objType: constants.CRTBsType, obj: nil},
-		item{title: "Catalog repos", desc: "Cluster apps repos", objType: constants.ReposType, obj: nil},
+		item{title: "Projects", desc: "Projects, Namespaces, and PRTB", objType: constants.ProjectsType, obj: nil},
+		item{title: "Cluster User Permissions", desc: "user permissions for the cluster (CRTB)", objType: constants.CRTBsType, obj: nil},
+		item{title: "Catalog Repos", desc: "Cluster apps repos", objType: constants.ReposType, obj: nil},
 	}
 	return items
 }
@@ -83,15 +76,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetSize(msg.Width-left-right, msg.Height-top-bottom-1)
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, constants.Keymap.Migrate):
-			m.mode = migrate
-			m.input.Focus()
-			cmd = textinput.Blink
 		case key.Matches(msg, constants.Keymap.Quit):
 			m.quitting = true
 			return m, tea.Quit
 		case key.Matches(msg, constants.Keymap.Enter):
-			entry := InitObjects(m.list.SelectedItem().(item), constants.P)
+			entry := InitObjects(m.list.SelectedItem().(item))
 			return entry.Update(constants.WindowSize)
 
 		default:
@@ -107,9 +96,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	if m.quitting {
 		return ""
-	}
-	if m.input.Focused() {
-		return constants.DocStyle.Render(m.list.View() + "\n" + m.input.View())
 	}
 	return constants.DocStyle.Render(m.list.View() + "\n")
 }

@@ -11,12 +11,14 @@ import (
 
 /* CONSTANTS */
 const (
-	CheckMark                      = "\u2714"
-	WrongMark                      = "\u2718"
-	WrongSpec                      = "(Wrong fields)"
+	/* Migration Types */
 	MigratedStatus MigrationStatus = iota
 	WrongSpecStatus
 	NotMigratedStatus
+	CheckMark = "\u2714"
+	WrongMark = "\u2718"
+	WrongSpec = "(Wrong fields)"
+
 	/* Object Types */
 	ProjectsType   = "projects"
 	CRTBsType      = "crtbs"
@@ -46,18 +48,7 @@ var (
 )
 
 /* STYLING */
-
-// DocStyle styling for viewports
-var DocStyle = lipgloss.NewStyle().Margin(0, 2)
-
-// HelpStyle styling for help context menu
-var HelpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render
-
-// ErrStyle provides styling for error messages
-var ErrStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#bd534b")).Render
-
-// AlertStyle provides styling for alert messages
-var AlertStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("62")).Render
+var DocStyle = lipgloss.NewStyle().Margin(0, 2).Foreground(lipgloss.Color("241"))
 
 type keymap struct {
 	Enter   key.Binding
@@ -78,7 +69,7 @@ var Keymap = keymap{
 	),
 	Back: key.NewBinding(
 		key.WithKeys("esc"),
-		key.WithHelp("esc", "back"),
+		key.WithHelp("esc", "main menu"),
 	),
 	Quit: key.NewBinding(
 		key.WithKeys("ctrl+c", "q"),
