@@ -2,6 +2,7 @@ package interactive
 
 import (
 	"context"
+	"fmt"
 	"galal-hussein/cattle-drive/cli/cmds"
 	"galal-hussein/cattle-drive/pkg/client"
 	"galal-hussein/cattle-drive/pkg/cluster"
@@ -99,7 +100,7 @@ func migrate(clx *cli.Context) error {
 		Client: tcClient,
 	}
 
-	cmds.Spinner.Prefix = "initiating source and target clusters objects.. "
+	cmds.Spinner.Prefix = fmt.Sprintf("initiating source [%s] and target [%s] clusters objects.. ", sc.Obj.Spec.DisplayName, tc.Obj.Spec.DisplayName)
 	cmds.Spinner.Start()
 	if err := sc.Populate(ctx, cl); err != nil {
 		return err
