@@ -27,7 +27,7 @@ func StartTea(sc, tc *cluster.Cluster, client *client.Clients) error {
 	constants.TC = tc
 	constants.Lclient = client
 
-	m, _ := InitCluster() // TODO: can we acknowledge this error
+	m, _ := InitCluster()
 	constants.P = tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := constants.P.Run(); err != nil {
 		return err
