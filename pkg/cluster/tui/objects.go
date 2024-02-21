@@ -23,7 +23,6 @@ type Objects struct {
 	mode         mode
 	list         list.Model
 	quitting     bool
-	percent      float64
 	progress     progress.Model
 	activeObject string
 }
@@ -91,7 +90,9 @@ func InitObjects(i item) *Objects {
 			items = append(items, i)
 		}
 	}
-	delegate := newItemDelegate(delegateKeys)
+	delegateObjKeys := *delegateKeys
+	delegateObjKeys.MigrateAll = key.NewBinding()
+	delegate := newItemDelegate(&delegateObjKeys)
 	objList := list.New(items, delegate, 8, 8)
 	objList.Styles.Title = constants.TitleStyle
 	m.list = objList
@@ -113,19 +114,23 @@ func (m Objects) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		top, right, bottom, left := constants.DocStyle.GetMargin()
 		m.list.SetSize(msg.Width-left-right, msg.Height-top-bottom-1)
 	case tickMsg:
-		m.percent += 0.1
-		if m.percent > 1.0 || m.mode == migrated {
-			m.percent = 1.0
-			return InitCluster()
+		m.mode = migrate
+		cmd := m.progress.IncrPercent(0.25)
+		if m.progress.Percent() == 1.0 || m.mode == migrated {
+			return InitCluster(nil)
 		}
-		return m, tickCmd()
+		return m, tea.Batch(tickCmd(), cmd)
+	case progress.FrameMsg:
+		progressModel, cmd := m.progress.Update(msg)
+		m.progress = progressModel.(progress.Model)
+		return m, cmd
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, delegateKeys.Quit):
 			m.quitting = true
 			return m, tea.Quit
 		case key.Matches(msg, delegateKeys.Back):
-			return InitCluster()
+			return InitCluster(nil)
 		case key.Matches(msg, delegateKeys.Enter):
 			if m.list.SelectedItem() == nil {
 				return m, tea.Batch(cmds...)
@@ -162,7 +167,7 @@ func (m Objects) View() string {
 	}
 	if m.mode == migrate {
 		pad := strings.Repeat(" ", 2)
-		return "\n\n Waiting for object [" + m.activeObject + "] to be migrated\n\n" + pad + m.progress.ViewAs(m.percent) + "\n\n" + pad
+		return "\n\n Waiting for object [" + m.activeObject + "] to be migrated\n\n" + pad + m.progress.View() + "\n\n" + pad
 	}
 	return constants.DocStyle.Render(m.list.View() + "\n")
 }

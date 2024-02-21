@@ -1,10 +1,15 @@
 package tui
 
 import (
+	"bytes"
+	"context"
 	"galal-hussein/cattle-drive/pkg/cluster/tui/constants"
+	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -17,9 +22,11 @@ const (
 )
 
 type Model struct {
-	mode     mode
-	list     list.Model
-	quitting bool
+	mode         mode
+	migratingAll bool
+	list         list.Model
+	progress     progress.Model
+	quitting     bool
 }
 
 type item struct {
@@ -43,19 +50,22 @@ func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func InitCluster() (tea.Model, tea.Cmd) {
+func InitCluster(msg tea.Msg) (tea.Model, tea.Cmd) {
+	prog := progress.New(progress.WithSolidFill("#04B575"))
 	items := newClusterList()
 	delegate := newItemDelegate(delegateKeys)
 	clusterList := list.New(items, delegate, 8, 8)
 	clusterList.Styles.Title = constants.TitleStyle
 
-	m := Model{mode: nav, list: clusterList}
+	m := Model{mode: nav, list: clusterList, progress: prog}
 	if constants.WindowSize.Height != 0 {
 		top, right, bottom, left := constants.DocStyle.GetMargin()
 		m.list.SetSize(constants.WindowSize.Width-left-right, constants.WindowSize.Height-top-bottom-1)
 	}
 	m.list.Title = "Cluster " + constants.SC.Obj.Spec.DisplayName + " migration"
-
+	if msg != nil {
+		return m, func() tea.Msg { return msg }
+	}
 	return m, func() tea.Msg { return errMsg{nil} }
 }
 
@@ -73,6 +83,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+	case tickMsg:
+		m.migratingAll = true
+		for {
+			select {
+			case <-time.After(time.Millisecond * 500):
+				if m.progress.Percent() == 1.0 {
+					cmd := m.progress.SetPercent(0)
+					return m, tea.Batch(tickCmd(), cmd)
+				}
+				cmd := m.progress.IncrPercent(0.25)
+				return m, tea.Batch(tickCmd(), cmd)
+			case <-constants.Migratedch:
+				return InitCluster(nil)
+			}
+		}
+	case progress.FrameMsg:
+		progressModel, cmd := m.progress.Update(msg)
+		m.progress = progressModel.(progress.Model)
+		return m, cmd
 	case tea.WindowSizeMsg:
 		constants.WindowSize = msg
 		top, right, bottom, left := constants.DocStyle.GetMargin()
@@ -85,7 +114,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, delegateKeys.Enter):
 			entry := InitObjects(m.list.SelectedItem().(item))
 			return entry.Update(constants.WindowSize)
-
+		case key.Matches(msg, delegateKeys.MigrateAll):
+			m.mode = migrate
+			go m.migrateCluster(context.Background())
+			return InitCluster(tickMsg{})
 		default:
 			m.list, cmd = m.list.Update(msg)
 		}
@@ -100,5 +132,20 @@ func (m Model) View() string {
 	if m.quitting {
 		return ""
 	}
+	if m.migratingAll {
+		pad := strings.Repeat(" ", 2)
+		return "\n\n Migrating all objects.. please wait" + pad + m.progress.View() + "\n\n" + pad
+	}
 	return constants.DocStyle.Render(m.list.View() + "\n")
+}
+
+func (m *Model) migrateCluster(ctx context.Context) {
+	var buf bytes.Buffer
+	if err := constants.SC.Migrate(ctx, constants.Lclient, constants.TC, &buf); err != nil {
+		m.Update(tea.Quit())
+	}
+	if err := updateClusters(ctx); err != nil {
+		m.Update(tea.Quit())
+	}
+	constants.Migratedch <- true
 }

@@ -44,7 +44,8 @@ func NewCommand() *cli.Command {
 
 func status(clx *cli.Context) error {
 	ctx := context.Background()
-
+	cmds.Spinner.Prefix = fmt.Sprintf("initiating source [%s] and target [%s] clusters objects.. ", source, target)
+	cmds.Spinner.Start()
 	restConfig, err := clientcmd.BuildConfigFromFlags("", cmds.Kubeconfig)
 	if err != nil {
 		return err
@@ -98,8 +99,6 @@ func status(clx *cli.Context) error {
 		Obj:    targetCluster,
 		Client: tcClient,
 	}
-	cmds.Spinner.Prefix = fmt.Sprintf("initiating source [%s] and target [%s] clusters objects.. ", sc.Obj.Spec.DisplayName, tc.Obj.Spec.DisplayName)
-	cmds.Spinner.Start()
 	if err := sc.Populate(ctx, cl); err != nil {
 		return err
 	}
