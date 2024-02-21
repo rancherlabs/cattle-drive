@@ -1,0 +1,20 @@
+#!/bin/bash
+
+source ./ops/version
+
+BUILDTAGS="netgo osusergo"
+GO_BUILDTAGS="${BUILD_TAGS} ${GO_BUILDTAGS} ${BUILDTAGS} ${DEBUG_TAGS}"
+
+VERSION_FLAGS="
+    -X ${CATTLE_DRIVE_PKG}/pkg/version.GitCommit=${REVISION}
+    -X ${CATTLE_DRIVE_PKG}/pkg/version.Program=${PROG}
+    -X ${CATTLE_DRIVE_PKG}/pkg/version.Version=${VERSION}
+"
+
+STATIC_FLAGS='-extldflags "-static"'
+
+go build \
+    -tags "${GO_BUILDTAGS}" \
+    -o bin/${PROG} \
+    -ldflags "${VERSION_FLAGS}" \
+    ${GO_TAGS}

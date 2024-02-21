@@ -20,7 +20,11 @@
 # Go workspace file
 go.work
 
+# ci
+bin/
+
 # Debug
 __debug*
 .vscode/
 cattle-drive
+dist/

@@ -6,17 +6,12 @@ import (
 	"galal-hussein/cattle-drive/cli/cmds/interactive"
 	"galal-hussein/cattle-drive/cli/cmds/migrate"
 	"galal-hussein/cattle-drive/cli/cmds/status"
+	"galal-hussein/cattle-drive/pkg/version"
 	"io"
 	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-)
-
-const (
-	program   = "cattle-drive"
-	version   = "dev"
-	gitCommit = "HEAD"
 )
 
 func main() {
@@ -26,7 +21,7 @@ func main() {
 		migrate.NewCommand(),
 		interactive.NewCommand(),
 	}
-	app.Version = version + " (" + gitCommit + ")"
+	app.Version = fmt.Sprintf("%s (%s)", version.Version, version.GitCommit)
 
 	logrus.SetOutput(io.Discard)
 	if err := app.Run(os.Args); err != nil {
