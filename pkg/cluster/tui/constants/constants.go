@@ -44,6 +44,7 @@ var (
 	Lclient *client.Clients
 	// WindowSize store the size of the terminal window
 	WindowSize tea.WindowSizeMsg
+	Migratedch = make(chan bool)
 )
 
 /* STYLING */

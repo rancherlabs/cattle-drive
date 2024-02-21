@@ -6,6 +6,7 @@ import (
 	"galal-hussein/cattle-drive/cli/cmds"
 	"galal-hussein/cattle-drive/pkg/client"
 	"galal-hussein/cattle-drive/pkg/cluster"
+	"os"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/sirupsen/logrus"
@@ -44,7 +45,8 @@ func NewCommand() *cli.Command {
 
 func migrate(clx *cli.Context) error {
 	ctx := context.Background()
-
+	cmds.Spinner.Prefix = fmt.Sprintf("initiating source [%s] and target [%s] clusters objects.. ", source, target)
+	cmds.Spinner.Start()
 	restConfig, err := clientcmd.BuildConfigFromFlags("", cmds.Kubeconfig)
 	if err != nil {
 		return err
@@ -98,8 +100,6 @@ func migrate(clx *cli.Context) error {
 		Obj:    targetCluster,
 		Client: tcClient,
 	}
-	cmds.Spinner.Prefix = fmt.Sprintf("initiating source [%s] and target [%s] clusters objects.. ", sc.Obj.Spec.DisplayName, tc.Obj.Spec.DisplayName)
-	cmds.Spinner.Start()
 	if err := sc.Populate(ctx, cl); err != nil {
 		return err
 	}
@@ -110,5 +110,5 @@ func migrate(clx *cli.Context) error {
 		return err
 	}
 	cmds.Spinner.Stop()
-	return sc.Migrate(ctx, cl, tc)
+	return sc.Migrate(ctx, cl, tc, os.Stdout)
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"galal-hussein/cattle-drive/pkg/client"
+	"io"
 	"reflect"
 
 	v1catalog "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
@@ -230,60 +231,60 @@ func (c *Cluster) Status(ctx context.Context, client *client.Clients) error {
 	return nil
 }
 
-func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Cluster) error {
-	fmt.Printf("Migrating Objects from cluster [%s] to cluster [%s]:\n", c.Obj.Spec.DisplayName, tc.Obj.Spec.DisplayName)
+func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Cluster, w io.Writer) error {
+	fmt.Fprintf(w, "Migrating Objects from cluster [%s] to cluster [%s]:\n", c.Obj.Spec.DisplayName, tc.Obj.Spec.DisplayName)
 	for _, p := range c.ToMigrate.Projects {
 		if !p.Migrated {
-			fmt.Printf("- migrating Project [%s]... ", p.Name)
+			fmt.Fprintf(w, "- migrating Project [%s]... ", p.Name)
 			p.Mutate(tc)
 			if err := client.Projects.Create(ctx, tc.Obj.Name, p.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err
 			}
-			fmt.Printf("Done.\n")
+			fmt.Fprintf(w, "Done.\n")
 		}
 
 		for _, prtb := range p.PRTBs {
 			if !prtb.Migrated {
-				fmt.Printf("  - migrating PRTB [%s]... ", prtb.Name)
+				fmt.Fprintf(w, "  - migrating PRTB [%s]... ", prtb.Name)
 				// if project is already migrated then we find out the new project name in the mgirated cluster
 
 				prtb.Mutate(tc.Obj.Name, prtb.ProjectName)
 				if err := client.ProjectRoleTemplateBindings.Create(ctx, prtb.ProjectName, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
 					return err
 				}
-				fmt.Printf("Done.\n")
+				fmt.Fprintf(w, "Done.\n")
 			}
 		}
 		for _, ns := range p.Namespaces {
 			if !ns.Migrated {
-				fmt.Printf("  - migrating Namespace [%s]... ", ns.Name)
+				fmt.Fprintf(w, "  - migrating Namespace [%s]... ", ns.Name)
 				ns.Mutate(tc.Obj.Name, ns.ProjectName)
 				if _, err := tc.Client.Namespace.Create(ns.Obj); err != nil {
 					return err
 				}
-				fmt.Printf("Done.\n")
+				fmt.Fprintf(w, "Done.\n")
 			}
 		}
 	}
 	for _, crtb := range c.ToMigrate.CRTBs {
 		if !crtb.Migrated {
-			fmt.Printf("- migrating CRTB [%s]... ", crtb.Name)
+			fmt.Fprintf(w, "- migrating CRTB [%s]... ", crtb.Name)
 			crtb.Mutate(tc)
 			if err := client.ClusterRoleTemplateBindings.Create(ctx, tc.Obj.Name, crtb.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err
 			}
-			fmt.Printf("Done.\n")
+			fmt.Fprintf(w, "Done.\n")
 		}
 	}
 	// catalog repos
 	for _, repo := range c.ToMigrate.ClusterRepos {
 		if !repo.Migrated {
-			fmt.Printf("- migrating catalog repo [%s]... ", repo.Name)
+			fmt.Fprintf(w, "- migrating catalog repo [%s]... ", repo.Name)
 			repo.Mutate()
 			if err := tc.Client.ClusterRepos.Create(ctx, tc.Obj.Name, repo.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err
 			}
-			fmt.Printf("Done.\n")
+			fmt.Fprintf(w, "Done.\n")
 		}
 	}
 

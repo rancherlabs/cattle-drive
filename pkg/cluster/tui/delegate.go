@@ -31,7 +31,7 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 		return nil
 	}
 
-	help := []key.Binding{keys.Enter, keys.Migrate, keys.Back}
+	help := []key.Binding{keys.Enter, keys.Migrate, keys.MigrateAll, keys.Back}
 
 	d.ShortHelpFunc = func() []key.Binding {
 		return help
@@ -45,16 +45,18 @@ func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 }
 
 type delegateKeyMap struct {
-	Migrate key.Binding
-	Back    key.Binding
-	Enter   key.Binding
-	Quit    key.Binding
+	MigrateAll key.Binding
+	Migrate    key.Binding
+	Back       key.Binding
+	Enter      key.Binding
+	Quit       key.Binding
 }
 
 // Additional short help entries. This satisfies the help.KeyMap interface and
 // is entirely optional.
 func (d delegateKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
+		d.MigrateAll,
 		d.Migrate,
 		d.Back,
 		d.Enter,
@@ -67,6 +69,7 @@ func (d delegateKeyMap) ShortHelp() []key.Binding {
 func (d delegateKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{
+			d.MigrateAll,
 			d.Migrate,
 			d.Back,
 			d.Enter,
@@ -84,6 +87,10 @@ func newDelegateKeyMap() *delegateKeyMap {
 		Migrate: key.NewBinding(
 			key.WithKeys("m"),
 			key.WithHelp("m", "migrate"),
+		),
+		MigrateAll: key.NewBinding(
+			key.WithKeys("a"),
+			key.WithHelp("a", "migrate all"),
 		),
 		Back: key.NewBinding(
 			key.WithKeys("esc"),
