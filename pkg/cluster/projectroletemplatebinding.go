@@ -1,6 +1,9 @@
 package cluster
 
 import (
+	"context"
+	"fmt"
+	"galal-hussein/cattle-drive/pkg/client"
 	"strings"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
@@ -14,6 +17,8 @@ type ProjectRoleTemplateBinding struct {
 	ProjectDisplayName string
 	Migrated           bool
 	Diff               bool
+	// Description only exists for PRTB and CRTB
+	Description string
 }
 
 func newPRTB(obj v3.ProjectRoleTemplateBinding, projectName, projectDisplayName string) *ProjectRoleTemplateBinding {
@@ -46,4 +51,14 @@ func (p *ProjectRoleTemplateBinding) Mutate(clusterName, projectName string) {
 			delete(p.Obj.Annotations, annotation)
 		}
 	}
+}
+
+func (p *ProjectRoleTemplateBinding) SetDescription(ctx context.Context, client *client.Clients) error {
+	var user v3.User
+	userID := p.Obj.UserName
+	if err := client.Users.Get(ctx, "", userID, &user, v1.GetOptions{}); err != nil {
+		return err
+	}
+	p.Description = fmt.Sprintf("%s permission for user %s", p.Obj.RoleTemplateName, user.DisplayName)
+	return nil
 }

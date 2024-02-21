@@ -66,7 +66,7 @@ func InitObjects(i item) *Objects {
 		}
 		for _, prtb := range prtbs {
 			t, status := status(prtb.Name, prtb.Migrated, prtb.Diff)
-			i := item{title: t, status: status, objType: constants.PRTBType, obj: prtb}
+			i := item{title: t, desc: prtb.Description, status: status, objType: constants.PRTBType, obj: prtb}
 			items = append(items, i)
 		}
 	case "projects":
@@ -80,7 +80,7 @@ func InitObjects(i item) *Objects {
 		title = "Cluster Users Permissions"
 		for _, crtb := range constants.SC.ToMigrate.CRTBs {
 			title, status := status(crtb.Name, crtb.Migrated, crtb.Diff)
-			i := item{title: title, status: status, objType: constants.CRTBType, obj: crtb}
+			i := item{title: title, desc: crtb.Description, status: status, objType: constants.CRTBType, obj: crtb}
 			items = append(items, i)
 		}
 	case "repos":
