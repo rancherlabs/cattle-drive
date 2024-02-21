@@ -74,6 +74,9 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 			}
 			prtb := newPRTB(item, "", p.Spec.DisplayName)
 			prtb.normalize()
+			if err := prtb.SetDescription(ctx, client); err != nil {
+				return err
+			}
 			prtbList = append(prtbList, prtb)
 		}
 		nsList := []*Namespace{}
@@ -99,6 +102,9 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 			continue
 		}
 		crtb.normalize()
+		if err := crtb.SetDescription(ctx, client); err != nil {
+			return err
+		}
 		crtbList = append(crtbList, crtb)
 	}
 	// apps
@@ -205,7 +211,7 @@ func (c *Cluster) Status(ctx context.Context, client *client.Clients) error {
 		if p.Migrated && !p.Diff {
 			fmt.Printf("  -> users permissions:\n")
 			for _, prtb := range p.PRTBs {
-				print(prtb.Name, prtb.Migrated, prtb.Diff, 1)
+				print(prtb.Name+": "+prtb.Description, prtb.Migrated, prtb.Diff, 1)
 			}
 			fmt.Printf("  -> namespaces:\n")
 			for _, ns := range p.Namespaces {
@@ -215,7 +221,7 @@ func (c *Cluster) Status(ctx context.Context, client *client.Clients) error {
 	}
 	fmt.Printf("Cluster users permissions:\n")
 	for _, crtb := range c.ToMigrate.CRTBs {
-		print(crtb.Name, crtb.Migrated, crtb.Diff, 0)
+		print(crtb.Name+": "+crtb.Description, crtb.Migrated, crtb.Diff, 0)
 	}
 	fmt.Printf("Catalog repos:\n")
 	for _, repo := range c.ToMigrate.ClusterRepos {
