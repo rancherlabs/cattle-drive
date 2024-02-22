@@ -18,6 +18,7 @@ import (
 var (
 	source           string
 	target           string
+	logFilePath      string
 	interactiveFlags = []cli.Flag{
 		&cli.StringFlag{
 			Name:        "source",
@@ -30,6 +31,13 @@ var (
 			Usage:       "name of the target cluster",
 			Destination: &target,
 			Aliases:     []string{"t"},
+		},
+		&cli.StringFlag{
+			Name:        "log-file",
+			Usage:       "log file path",
+			Destination: &logFilePath,
+			Aliases:     []string{"l"},
+			Value:       "cattle-drive.log",
 		},
 	}
 )
@@ -111,5 +119,5 @@ func migrate(clx *cli.Context) error {
 		return err
 	}
 	cmds.Spinner.Stop()
-	return tui.StartTea(sc, tc, cl)
+	return tui.StartTea(sc, tc, cl, logFilePath)
 }

@@ -36,7 +36,7 @@ var (
 func NewCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "status",
-		Usage:  "status command",
+		Usage:  "Status command",
 		Action: status,
 		Flags:  append(cmds.CommonFlags, statusFlags...),
 	}

@@ -28,3 +28,7 @@ __debug*
 .vscode/
 cattle-drive
 dist/
+
+# tui log file
+cattle-drive.log
+

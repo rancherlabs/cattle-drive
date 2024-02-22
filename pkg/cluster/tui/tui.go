@@ -11,13 +11,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func StartTea(sc, tc *cluster.Cluster, client *client.Clients) error {
-	if f, err := tea.LogToFile("debug.log", "help"); err != nil {
+func StartTea(sc, tc *cluster.Cluster, client *client.Clients, logFilePath string) error {
+	if f, err := tea.LogToFile(logFilePath, "help"); err != nil {
 		fmt.Println("Couldn't open a file for logging:", err)
 		os.Exit(1)
 	} else {
+		constants.LogFile = *f
 		defer func() {
-			err = f.Close()
+			err = constants.LogFile.Close()
 			if err != nil {
 				log.Fatal(err)
 			}
