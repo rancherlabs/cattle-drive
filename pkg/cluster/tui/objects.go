@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"galal-hussein/cattle-drive/pkg/cluster"
 	"galal-hussein/cattle-drive/pkg/cluster/tui/constants"
 	"strings"
@@ -184,7 +185,11 @@ func status(name string, migrated, diff bool) (string, constants.MigrationStatus
 }
 
 func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
-	var msg string
+	var (
+		objectMigrated bool
+		msg            string
+	)
+
 	switch i.objType {
 	case constants.ProjectType:
 		if i.status == constants.NotMigratedStatus {
@@ -193,6 +198,7 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 			if err := constants.Lclient.Projects.Create(ctx, constants.TC.Obj.Name, p.Obj, nil, v1.CreateOptions{}); err != nil {
 				return nil, err
 			}
+			objectMigrated = true
 			if err := updateClusters(ctx); err != nil {
 				return nil, err
 			}
@@ -205,6 +211,7 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 			if _, err := constants.TC.Client.Namespace.Create(ns.Obj); err != nil {
 				return nil, err
 			}
+			objectMigrated = true
 			if err := updateClusters(ctx); err != nil {
 				return nil, err
 			}
@@ -218,6 +225,7 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 			if err := constants.Lclient.ProjectRoleTemplateBindings.Create(ctx, prtb.ProjectName, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
 				return nil, err
 			}
+			objectMigrated = true
 			if err := updateClusters(ctx); err != nil {
 				return nil, err
 			}
@@ -230,6 +238,7 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 			if err := constants.Lclient.ClusterRoleTemplateBindings.Create(ctx, constants.TC.Obj.Name, crtb.Obj, nil, v1.CreateOptions{}); err != nil {
 				return nil, err
 			}
+			objectMigrated = true
 			if err := updateClusters(ctx); err != nil {
 				return nil, err
 			}
@@ -243,6 +252,7 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 			if err := constants.TC.Client.ClusterRepos.Create(ctx, constants.TC.Obj.Name, repo.Obj, nil, v1.CreateOptions{}); err != nil {
 				return nil, err
 			}
+			objectMigrated = true
 			if err := updateClusters(ctx); err != nil {
 				return nil, err
 			}
@@ -251,6 +261,9 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 
 	}
 	m.mode = migrated
+	if objectMigrated {
+		fmt.Fprintf(&constants.LogFile, "[%s] migrated object [%s/%s]\n", time.Now().String(), i.objType, i.title)
+	}
 	return msg, nil
 }
 
@@ -264,6 +277,7 @@ func updateClusters(ctx context.Context) error {
 	if err := constants.SC.Compare(ctx, constants.Lclient, constants.TC); err != nil {
 		return err
 	}
+	fmt.Fprintf(&constants.LogFile, "[%s] successfully updated cluster [%s]\n", time.Now().String(), constants.SC.Obj.Spec.DisplayName)
 	return nil
 }
 

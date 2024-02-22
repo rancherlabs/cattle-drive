@@ -3,6 +3,7 @@ package constants
 import (
 	"galal-hussein/cattle-drive/pkg/client"
 	"galal-hussein/cattle-drive/pkg/cluster"
+	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -44,7 +45,10 @@ var (
 	Lclient *client.Clients
 	// WindowSize store the size of the terminal window
 	WindowSize tea.WindowSizeMsg
+	// Migratedch all object chan
 	Migratedch = make(chan bool)
+	// logFile
+	LogFile os.File
 )
 
 /* STYLING */

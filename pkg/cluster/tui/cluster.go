@@ -1,8 +1,8 @@
 package tui
 
 import (
-	"bytes"
 	"context"
+	"fmt"
 	"galal-hussein/cattle-drive/pkg/cluster/tui/constants"
 	"strings"
 	"time"
@@ -140,11 +140,13 @@ func (m Model) View() string {
 }
 
 func (m *Model) migrateCluster(ctx context.Context) {
-	var buf bytes.Buffer
-	if err := constants.SC.Migrate(ctx, constants.Lclient, constants.TC, &buf); err != nil {
+	fmt.Fprintf(&constants.LogFile, "[%s] initiating cluster objects migrate:\n", time.Now().String())
+	if err := constants.SC.Migrate(ctx, constants.Lclient, constants.TC, &constants.LogFile); err != nil {
+		fmt.Fprintf(&constants.LogFile, "[%s] [error] %v\n", time.Now().String(), err)
 		m.Update(tea.Quit())
 	}
 	if err := updateClusters(ctx); err != nil {
+		fmt.Fprintf(&constants.LogFile, "[%s] [error] %v\n", time.Now().String(), err)
 		m.Update(tea.Quit())
 	}
 	constants.Migratedch <- true
