@@ -209,16 +209,19 @@ func (c *Cluster) Status(ctx context.Context, client *client.Clients) error {
 	fmt.Printf("Project status:\n")
 	for _, p := range c.ToMigrate.Projects {
 		print(p.Name, p.Migrated, p.Diff, 0)
-		if p.Migrated && !p.Diff {
+		if len(p.PRTBs) > 0 {
 			fmt.Printf("  -> users permissions:\n")
-			for _, prtb := range p.PRTBs {
-				print(prtb.Name+": "+prtb.Description, prtb.Migrated, prtb.Diff, 1)
-			}
-			fmt.Printf("  -> namespaces:\n")
-			for _, ns := range p.Namespaces {
-				print(ns.Name, ns.Migrated, ns.Diff, 1)
-			}
 		}
+		for _, prtb := range p.PRTBs {
+			print(prtb.Name+": "+prtb.Description, prtb.Migrated, prtb.Diff, 1)
+		}
+		if len(p.Namespaces) > 0 {
+			fmt.Printf("  -> namespaces:\n")
+		}
+		for _, ns := range p.Namespaces {
+			print(ns.Name, ns.Migrated, ns.Diff, 1)
+		}
+
 	}
 	fmt.Printf("Cluster users permissions:\n")
 	for _, crtb := range c.ToMigrate.CRTBs {
@@ -239,6 +242,13 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 			p.Mutate(tc)
 			if err := client.Projects.Create(ctx, tc.Obj.Name, p.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err
+			}
+			// set ProjectName for all ns and prtbs for this project
+			for _, sPRTB := range p.PRTBs {
+				sPRTB.ProjectName = p.Obj.Name
+			}
+			for _, ns := range p.Namespaces {
+				ns.ProjectName = p.Obj.Name
 			}
 			fmt.Fprintf(w, "Done.\n")
 		}
