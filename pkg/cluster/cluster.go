@@ -133,7 +133,7 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 }
 
 // Compare will compare between objects of downstream source cluster and target cluster
-func (c *Cluster) Compare(ctx context.Context, client *client.Clients, tc *Cluster) error {
+func (c *Cluster) Compare(ctx context.Context, tc *Cluster) error {
 	// projects
 	for _, sProject := range c.ToMigrate.Projects {
 		for _, tProject := range tc.ToMigrate.Projects {
@@ -205,7 +205,7 @@ func (c *Cluster) Compare(ctx context.Context, client *client.Clients, tc *Clust
 	return nil
 }
 
-func (c *Cluster) Status(ctx context.Context, client *client.Clients) error {
+func (c *Cluster) Status(ctx context.Context) error {
 	fmt.Printf("Project status:\n")
 	for _, p := range c.ToMigrate.Projects {
 		print(p.Name, p.Migrated, p.Diff, 0)

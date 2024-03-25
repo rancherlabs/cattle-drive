@@ -11,7 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func StartTea(sc, tc *cluster.Cluster, client *client.Clients, logFilePath string) error {
+func StartTea(sc, tc *cluster.Cluster, client, tClient *client.Clients, logFilePath string) error {
 	if f, err := tea.LogToFile(logFilePath, "help"); err != nil {
 		fmt.Println("Couldn't open a file for logging:", err)
 		os.Exit(1)
@@ -27,6 +27,7 @@ func StartTea(sc, tc *cluster.Cluster, client *client.Clients, logFilePath strin
 	constants.SC = sc
 	constants.TC = tc
 	constants.Lclient = client
+	constants.TClient = tClient
 
 	m, _ := InitCluster(nil)
 	constants.P = tea.NewProgram(m, tea.WithAltScreen())

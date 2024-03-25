@@ -141,7 +141,11 @@ func (m Model) View() string {
 
 func (m *Model) migrateCluster(ctx context.Context) {
 	fmt.Fprintf(&constants.LogFile, "[%s] initiating cluster objects migrate:\n", time.Now().String())
-	if err := constants.SC.Migrate(ctx, constants.Lclient, constants.TC, &constants.LogFile); err != nil {
+	cl := constants.TClient
+	if cl == nil {
+		cl = constants.Lclient
+	}
+	if err := constants.SC.Migrate(ctx, cl, constants.TC, &constants.LogFile); err != nil {
 		fmt.Fprintf(&constants.LogFile, "[%s] [error] %v\n", time.Now().String(), err)
 		m.Update(tea.Quit())
 	}
