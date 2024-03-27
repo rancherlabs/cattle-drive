@@ -10,14 +10,17 @@ import (
 
 	v1catalog "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Cluster struct {
-	Obj        *v3.Cluster
-	ToMigrate  ToMigrate
-	SystemUser *v3.User
-	Client     *client.Clients
+	Obj             *v3.Cluster
+	ToMigrate       ToMigrate
+	SystemUser      *v3.User
+	DefaultAdmin    *v3.User
+	Client          *client.Clients
+	ExternalRancher bool
 }
 
 type ToMigrate struct {
@@ -26,6 +29,7 @@ type ToMigrate struct {
 	// apps related objects
 	ClusterRepos []*ClusterRepo
 	Apps         []*App
+	Users        []*User
 }
 
 // Populate will fill in the objects to be migrated
@@ -36,17 +40,45 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		clusterRoleTemplateBindings v3.ClusterRoleTemplateBindingList
 		users                       v3.UserList
 		repos                       v1catalog.ClusterRepoList
+		grbs                        v3.GlobalRoleBindingList
 	)
 	// systemUsers
 	if err := client.Users.List(ctx, "", &users, v1.ListOptions{}); err != nil {
 		return err
 	}
+	usersList := []*User{}
 	for _, user := range users.Items {
 		for _, principalID := range user.PrincipalIDs {
 			if principalID == "system://"+c.Obj.Name {
 				c.SystemUser = user.DeepCopy()
 				break
 			}
+		}
+		if c.ExternalRancher {
+			if user.Name == c.Obj.Annotations["field.cattle.io/creatorId"] {
+				// use the cluster creator user as the default admin for any new project
+				c.DefaultAdmin = user.DeepCopy()
+			}
+			if user.Username == "admin" || user.Username == "" {
+				continue
+			}
+			var grbList []*GlobalRoleBinding
+			if err := client.GlobalRoleBindings.List(ctx, "", &grbs, v1.ListOptions{}); err != nil {
+				return err
+			}
+			for _, grb := range grbs.Items {
+				if grb.UserName == user.Name {
+					newGRB := newGRB(grb)
+					newGRB.normalize()
+					newGRB.SetDescription(user)
+					grbList = append(grbList, newGRB)
+				}
+			}
+			// populate users
+			u := newUser(user, grbList)
+			u.normalize()
+			usersList = append(usersList, u)
+
 		}
 	}
 	// namespaces
@@ -128,12 +160,28 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		Projects:     pList,
 		CRTBs:        crtbList,
 		ClusterRepos: reposList,
+		Users:        usersList,
 	}
 	return nil
 }
 
 // Compare will compare between objects of downstream source cluster and target cluster
 func (c *Cluster) Compare(ctx context.Context, tc *Cluster) error {
+	// users
+	for _, sUser := range c.ToMigrate.Users {
+		for _, tUser := range tc.ToMigrate.Users {
+			if sUser.Name == tUser.Name && sUser.Obj.Username == tUser.Obj.Username {
+				sUser.Migrated = true
+				for _, sGRB := range sUser.GlobalRoleBindings {
+					for _, tGRB := range tUser.GlobalRoleBindings {
+						if sGRB.Name == tGRB.Name {
+							sGRB.Migrated = true
+						}
+					}
+				}
+			}
+		}
+	}
 	// projects
 	for _, sProject := range c.ToMigrate.Projects {
 		for _, tProject := range tc.ToMigrate.Projects {
@@ -206,6 +254,19 @@ func (c *Cluster) Compare(ctx context.Context, tc *Cluster) error {
 }
 
 func (c *Cluster) Status(ctx context.Context) error {
+	if c.ExternalRancher {
+		fmt.Printf("Users status:\n")
+		for _, u := range c.ToMigrate.Users {
+			print(u.Obj.Username, u.Migrated, u.Diff, 0)
+			if len(u.GlobalRoleBindings) > 0 {
+				fmt.Printf("  -> user permissions:\n")
+			}
+			for _, grb := range u.GlobalRoleBindings {
+				print(grb.Name+": "+grb.Description, grb.Migrated, grb.Diff, 1)
+			}
+		}
+	}
+
 	fmt.Printf("Project status:\n")
 	for _, p := range c.ToMigrate.Projects {
 		print(p.Name, p.Migrated, p.Diff, 0)
@@ -236,6 +297,28 @@ func (c *Cluster) Status(ctx context.Context) error {
 
 func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Cluster, w io.Writer) error {
 	fmt.Fprintf(w, "Migrating Objects from cluster [%s] to cluster [%s]:\n", c.Obj.Spec.DisplayName, tc.Obj.Spec.DisplayName)
+	// users
+	if c.ExternalRancher {
+		for _, u := range c.ToMigrate.Users {
+			if !u.Migrated {
+				fmt.Fprintf(w, "- migrating User [%s]... ", u.Obj.Username)
+
+				u.Mutate()
+				if err := client.Users.Create(ctx, "", u.Obj, nil, v1.CreateOptions{}); err != nil {
+					return err
+				}
+				// migrating all grbs for this user
+				for _, grb := range u.GlobalRoleBindings {
+					grb.Mutate()
+					if err := client.GlobalRoleBindings.Create(ctx, "", grb.Obj, nil, v1.CreateOptions{}); err != nil {
+						return err
+					}
+				}
+				fmt.Fprintf(w, "Done.\n")
+			}
+		}
+	}
+
 	for _, p := range c.ToMigrate.Projects {
 		if !p.Migrated {
 			fmt.Fprintf(w, "- migrating Project [%s]... ", p.Name)
@@ -256,7 +339,14 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 		for _, prtb := range p.PRTBs {
 			if !prtb.Migrated {
 				fmt.Fprintf(w, "  - migrating PRTB [%s]... ", prtb.Name)
-				// if project is already migrated then we find out the new project name in the mgirated cluster
+				// check if the user exists first in case of external rancher
+				userID := prtb.Obj.UserName
+				var user v3.User
+				if err := client.Users.Get(ctx, "", userID, &user, v1.GetOptions{}); err != nil {
+					if apierrors.IsNotFound(err) {
+						return fmt.Errorf("user [%s] does not exists, please migrate user first", userID)
+					}
+				}
 
 				prtb.Mutate(tc.Obj.Name, prtb.ProjectName)
 				if err := client.ProjectRoleTemplateBindings.Create(ctx, prtb.ProjectName, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
@@ -279,6 +369,15 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 	for _, crtb := range c.ToMigrate.CRTBs {
 		if !crtb.Migrated {
 			fmt.Fprintf(w, "- migrating CRTB [%s]... ", crtb.Name)
+			// check if the user exists first in case of external rancher
+			userID := crtb.Obj.UserName
+			var user v3.User
+			if err := client.Users.Get(ctx, "", userID, &user, v1.GetOptions{}); err != nil {
+				if apierrors.IsNotFound(err) {
+					return fmt.Errorf("user [%s] does not exists, please migrate user first", userID)
+				}
+			}
+
 			crtb.Mutate(tc)
 			if err := client.ClusterRoleTemplateBindings.Create(ctx, tc.Obj.Name, crtb.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err

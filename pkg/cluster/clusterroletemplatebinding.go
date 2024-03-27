@@ -63,6 +63,10 @@ func (c *ClusterRoleTemplateBinding) SetDescription(ctx context.Context, client 
 	if err := client.Users.Get(ctx, "", userID, &user, v1.GetOptions{}); err != nil {
 		return err
 	}
-	c.Description = fmt.Sprintf("%s permission for user %s", c.Obj.RoleTemplateName, user.DisplayName)
+	name := user.DisplayName
+	if name == "" {
+		name = user.Username
+	}
+	c.Description = fmt.Sprintf("%s permission for user %s", c.Obj.RoleTemplateName, name)
 	return nil
 }

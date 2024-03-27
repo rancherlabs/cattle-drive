@@ -39,6 +39,18 @@ func InitObjects(i item) *Objects {
 	items := []list.Item{}
 	m := Objects{mode: nav, progress: prog}
 	switch i.objType {
+	case "users":
+		title = "Rancher Users"
+		for _, user := range constants.SC.ToMigrate.Users {
+			grbNames := []string{}
+			for _, grb := range user.GlobalRoleBindings {
+				grbNames = append(grbNames, grb.Obj.GlobalRoleName)
+			}
+
+			title, status := status(user.Obj.Username, user.Migrated, user.Diff)
+			i := item{title: title, desc: "permissions: (" + strings.Join(grbNames, ",") + ")", status: status, objType: constants.UserType, obj: user}
+			items = append(items, i)
+		}
 	case "project":
 		// in case of individual project then we will list namespaces and prtbs
 		project := i.obj.(*cluster.Project)
@@ -141,7 +153,7 @@ func (m Objects) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				entry := InitObjects(item)
 				return entry.Update(constants.WindowSize)
 			}
-			if item.objType == constants.PRTBsType || item.objType == constants.NamespacesType {
+			if item.objType == constants.PRTBsType || item.objType == constants.NamespacesType || item.objType == constants.UsersType {
 				entry := InitObjects(item)
 				return entry.Update(constants.WindowSize)
 			}
@@ -261,6 +273,27 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 				return nil, err
 			}
 			msg = repo.Name
+		}
+	case constants.UserType:
+		if i.status == constants.NotMigratedStatus {
+			if constants.TClient != nil {
+				user := i.obj.(*cluster.User)
+				user.Mutate()
+				if err := constants.TClient.Users.Create(ctx, "", user.Obj, nil, v1.CreateOptions{}); err != nil {
+					return nil, err
+				}
+				for _, grb := range user.GlobalRoleBindings {
+					grb.Mutate()
+					if err := constants.TClient.GlobalRoleBindings.Create(ctx, "", grb.Obj, nil, v1.CreateOptions{}); err != nil {
+						return nil, err
+					}
+				}
+				objectMigrated = true
+				if err := updateClusters(ctx); err != nil {
+					return nil, err
+				}
+				msg = user.Name
+			}
 		}
 
 	}

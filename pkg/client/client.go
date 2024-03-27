@@ -21,6 +21,7 @@ type Clients struct {
 	ClusterRegistrationTokens   *client.Client
 	Users                       *client.Client
 	ClusterRepos                *client.Client
+	GlobalRoleBindings          *client.Client
 	ConfigMaps                  v1.ConfigMapClient
 	Namespace                   v1.NamespaceClient
 }
@@ -58,6 +59,7 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 		ClusterRoleTemplateBindings: NewClient(factory, "management.cattle.io", "v3", "clusterRoleTemplateBindings", "ClusterRoleTemplateBinding", true),
 		ClusterRegistrationTokens:   NewClient(factory, "management.cattle.io", "v3", "clusterRegistrationTokens", "ClusterRegistrationToken", false),
 		ClusterRepos:                NewClient(factory, "catalog.cattle.io", "v1", "clusterRepos", "ClusterRepo", false),
+		GlobalRoleBindings:          NewClient(factory, "management.cattle.io", "v3", "globalRoleBindings", "GlobalRoleBinding", false),
 	}, nil
 }
 

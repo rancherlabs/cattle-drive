@@ -30,6 +30,8 @@ const (
 	NamespaceType  = "namespace"
 	PRTBType       = "prtb"
 	RepoType       = "repo"
+	UsersType      = "users"
+	UserType       = "user"
 )
 
 type MigrationStatus int

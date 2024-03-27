@@ -75,6 +75,9 @@ func newClusterList() []list.Item {
 		item{title: "Cluster User Permissions", desc: "user permissions for the cluster (CRTB)", objType: constants.CRTBsType, obj: nil},
 		item{title: "Catalog Repos", desc: "Cluster apps repos", objType: constants.ReposType, obj: nil},
 	}
+	if constants.TC.ExternalRancher || constants.SC.ExternalRancher {
+		items = append(items, item{title: "Users", desc: "Rancher Users", objType: constants.UsersType, obj: nil})
+	}
 	return items
 }
 

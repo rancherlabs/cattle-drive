@@ -143,7 +143,11 @@ func migrate(clx *cli.Context) error {
 		Obj:    targetCluster,
 		Client: tcClient,
 	}
-
+	// check if the target cluster is in external rancher environment then set external rancher to true
+	if targetRancherClient != nil {
+		tc.ExternalRancher = true
+		sc.ExternalRancher = true
+	}
 	if err := sc.Populate(ctx, cl); err != nil {
 		return err
 	}
