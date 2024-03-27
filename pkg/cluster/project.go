@@ -51,4 +51,8 @@ func (p *Project) Mutate(c *Cluster) {
 			delete(p.Obj.Annotations, annotation)
 		}
 	}
+	if c.ExternalRancher {
+		p.Obj.Annotations["field.cattle.io/creatorId"] = c.DefaultAdmin.Name
+		p.Obj.Annotations["authz.management.cattle.io/creator-role-bindings"] = `{"required":["project-owner"]}`
+	}
 }

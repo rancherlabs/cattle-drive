@@ -75,6 +75,9 @@ func newClusterList() []list.Item {
 		item{title: "Cluster User Permissions", desc: "user permissions for the cluster (CRTB)", objType: constants.CRTBsType, obj: nil},
 		item{title: "Catalog Repos", desc: "Cluster apps repos", objType: constants.ReposType, obj: nil},
 	}
+	if constants.TC.ExternalRancher || constants.SC.ExternalRancher {
+		items = append(items, item{title: "Users", desc: "Rancher Users", objType: constants.UsersType, obj: nil})
+	}
 	return items
 }
 
@@ -141,7 +144,11 @@ func (m Model) View() string {
 
 func (m *Model) migrateCluster(ctx context.Context) {
 	fmt.Fprintf(&constants.LogFile, "[%s] initiating cluster objects migrate:\n", time.Now().String())
-	if err := constants.SC.Migrate(ctx, constants.Lclient, constants.TC, &constants.LogFile); err != nil {
+	cl := constants.TClient
+	if cl == nil {
+		cl = constants.Lclient
+	}
+	if err := constants.SC.Migrate(ctx, cl, constants.TC, &constants.LogFile); err != nil {
 		fmt.Fprintf(&constants.LogFile, "[%s] [error] %v\n", time.Now().String(), err)
 		m.Update(tea.Quit())
 	}

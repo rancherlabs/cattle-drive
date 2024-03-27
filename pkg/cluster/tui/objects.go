@@ -39,6 +39,18 @@ func InitObjects(i item) *Objects {
 	items := []list.Item{}
 	m := Objects{mode: nav, progress: prog}
 	switch i.objType {
+	case "users":
+		title = "Rancher Users"
+		for _, user := range constants.SC.ToMigrate.Users {
+			grbNames := []string{}
+			for _, grb := range user.GlobalRoleBindings {
+				grbNames = append(grbNames, grb.Obj.GlobalRoleName)
+			}
+
+			title, status := status(user.Obj.Username, user.Migrated, user.Diff)
+			i := item{title: title, desc: "permissions: (" + strings.Join(grbNames, ",") + ")", status: status, objType: constants.UserType, obj: user}
+			items = append(items, i)
+		}
 	case "project":
 		// in case of individual project then we will list namespaces and prtbs
 		project := i.obj.(*cluster.Project)
@@ -189,13 +201,17 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 		objectMigrated bool
 		msg            string
 	)
+	cl := constants.TClient
+	if cl == nil {
+		cl = constants.Lclient
+	}
 
 	switch i.objType {
 	case constants.ProjectType:
 		if i.status == constants.NotMigratedStatus {
 			p := i.obj.(*cluster.Project)
 			p.Mutate(constants.TC)
-			if err := constants.Lclient.Projects.Create(ctx, constants.TC.Obj.Name, p.Obj, nil, v1.CreateOptions{}); err != nil {
+			if err := cl.Projects.Create(ctx, constants.TC.Obj.Name, p.Obj, nil, v1.CreateOptions{}); err != nil {
 				return nil, err
 			}
 			objectMigrated = true
@@ -222,7 +238,7 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 		if i.status == constants.NotMigratedStatus {
 			prtb := i.obj.(*cluster.ProjectRoleTemplateBinding)
 			prtb.Mutate(constants.TC.Obj.Name, prtb.ProjectName)
-			if err := constants.Lclient.ProjectRoleTemplateBindings.Create(ctx, prtb.ProjectName, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
+			if err := cl.ProjectRoleTemplateBindings.Create(ctx, prtb.ProjectName, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
 				return nil, err
 			}
 			objectMigrated = true
@@ -235,7 +251,7 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 		if i.status == constants.NotMigratedStatus {
 			crtb := i.obj.(*cluster.ClusterRoleTemplateBinding)
 			crtb.Mutate(constants.TC)
-			if err := constants.Lclient.ClusterRoleTemplateBindings.Create(ctx, constants.TC.Obj.Name, crtb.Obj, nil, v1.CreateOptions{}); err != nil {
+			if err := cl.ClusterRoleTemplateBindings.Create(ctx, constants.TC.Obj.Name, crtb.Obj, nil, v1.CreateOptions{}); err != nil {
 				return nil, err
 			}
 			objectMigrated = true
@@ -258,6 +274,27 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 			}
 			msg = repo.Name
 		}
+	case constants.UserType:
+		if i.status == constants.NotMigratedStatus {
+			if constants.TClient != nil {
+				user := i.obj.(*cluster.User)
+				user.Mutate()
+				if err := constants.TClient.Users.Create(ctx, "", user.Obj, nil, v1.CreateOptions{}); err != nil {
+					return nil, err
+				}
+				for _, grb := range user.GlobalRoleBindings {
+					grb.Mutate()
+					if err := constants.TClient.GlobalRoleBindings.Create(ctx, "", grb.Obj, nil, v1.CreateOptions{}); err != nil {
+						return nil, err
+					}
+				}
+				objectMigrated = true
+				if err := updateClusters(ctx); err != nil {
+					return nil, err
+				}
+				msg = user.Name
+			}
+		}
 
 	}
 	m.mode = migrated
@@ -271,10 +308,16 @@ func updateClusters(ctx context.Context) error {
 	if err := constants.SC.Populate(ctx, constants.Lclient); err != nil {
 		return err
 	}
-	if err := constants.TC.Populate(ctx, constants.Lclient); err != nil {
-		return err
+	if constants.TClient != nil {
+		if err := constants.TC.Populate(ctx, constants.TClient); err != nil {
+			return err
+		}
+	} else {
+		if err := constants.TC.Populate(ctx, constants.Lclient); err != nil {
+			return err
+		}
 	}
-	if err := constants.SC.Compare(ctx, constants.Lclient, constants.TC); err != nil {
+	if err := constants.SC.Compare(ctx, constants.TC); err != nil {
 		return err
 	}
 	fmt.Fprintf(&constants.LogFile, "[%s] successfully updated cluster [%s]\n", time.Now().String(), constants.SC.Obj.Spec.DisplayName)

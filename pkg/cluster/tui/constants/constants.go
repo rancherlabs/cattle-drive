@@ -30,6 +30,8 @@ const (
 	NamespaceType  = "namespace"
 	PRTBType       = "prtb"
 	RepoType       = "repo"
+	UsersType      = "users"
+	UserType       = "user"
 )
 
 type MigrationStatus int
@@ -41,8 +43,10 @@ var (
 	SC *cluster.Cluster
 	// TC the target cluster
 	TC *cluster.Cluster
-	// Local Client
+	// Local Rancher Client
 	Lclient *client.Clients
+	// Target Rancher Client
+	TClient *client.Clients
 	// WindowSize store the size of the terminal window
 	WindowSize tea.WindowSizeMsg
 	// Migratedch all object chan

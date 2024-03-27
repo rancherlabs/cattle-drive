@@ -8,13 +8,20 @@ import (
 )
 
 var (
-	Kubeconfig  string
-	CommonFlags = []cli.Flag{
+	Kubeconfig          string
+	TargetRancherConfig string
+	CommonFlags         = []cli.Flag{
 		&cli.StringFlag{
 			Name:        "kubeconfig",
 			EnvVars:     []string{"KUBECONFIG"},
 			Usage:       "Kubeconfig path",
 			Destination: &Kubeconfig,
+		},
+		&cli.StringFlag{
+			Name:        "target-rancher-config",
+			EnvVars:     []string{"TARGET_RANCHER"},
+			Usage:       "(experimental) migrate cluster objects to another rancher deployment",
+			Destination: &TargetRancherConfig,
 		},
 	}
 	Spinner *spinner.Spinner

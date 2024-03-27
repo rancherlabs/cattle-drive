@@ -17,8 +17,7 @@ type ProjectRoleTemplateBinding struct {
 	ProjectDisplayName string
 	Migrated           bool
 	Diff               bool
-	// Description only exists for PRTB and CRTB
-	Description string
+	Description        string
 }
 
 func newPRTB(obj v3.ProjectRoleTemplateBinding, projectName, projectDisplayName string) *ProjectRoleTemplateBinding {
@@ -59,6 +58,10 @@ func (p *ProjectRoleTemplateBinding) SetDescription(ctx context.Context, client 
 	if err := client.Users.Get(ctx, "", userID, &user, v1.GetOptions{}); err != nil {
 		return err
 	}
-	p.Description = fmt.Sprintf("%s permission for user %s", p.Obj.RoleTemplateName, user.DisplayName)
+	name := user.DisplayName
+	if name == "" {
+		name = user.Username
+	}
+	p.Description = fmt.Sprintf("%s permission for user %s", p.Obj.RoleTemplateName, name)
 	return nil
 }
