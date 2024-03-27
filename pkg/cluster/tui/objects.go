@@ -153,7 +153,7 @@ func (m Objects) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				entry := InitObjects(item)
 				return entry.Update(constants.WindowSize)
 			}
-			if item.objType == constants.PRTBsType || item.objType == constants.NamespacesType || item.objType == constants.UsersType {
+			if item.objType == constants.PRTBsType || item.objType == constants.NamespacesType {
 				entry := InitObjects(item)
 				return entry.Update(constants.WindowSize)
 			}
