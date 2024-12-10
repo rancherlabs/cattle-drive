@@ -3,8 +3,8 @@ package tui
 import (
 	"context"
 	"fmt"
-	"galal-hussein/cattle-drive/pkg/cluster"
-	"galal-hussein/cattle-drive/pkg/cluster/tui/constants"
+	"rancherlabs/cattle-drive/pkg/cluster"
+	"rancherlabs/cattle-drive/pkg/cluster/tui/constants"
 	"strings"
 	"time"
 

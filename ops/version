@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-CATTLE_DRIVE_PKG=galal-hussein/cattle-drive
+CATTLE_DRIVE_PKG=rancherlabs/cattle-drive
 PROG=cattle-drive
 REGISTRY=docker.io
 REPO=${REPO:-husseingalal}

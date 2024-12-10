@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"galal-hussein/cattle-drive/pkg/cluster/tui/constants"
+	"rancherlabs/cattle-drive/pkg/cluster/tui/constants"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"

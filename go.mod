@@ -1,4 +1,4 @@
-module galal-hussein/cattle-drive
+module rancherlabs/cattle-drive
 
 go 1.21.4
 

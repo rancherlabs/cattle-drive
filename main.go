@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"galal-hussein/cattle-drive/cli/cmds"
-	"galal-hussein/cattle-drive/cli/cmds/interactive"
-	"galal-hussein/cattle-drive/cli/cmds/migrate"
-	"galal-hussein/cattle-drive/cli/cmds/status"
-	"galal-hussein/cattle-drive/pkg/version"
 	"io"
 	"os"
+	"rancherlabs/cattle-drive/cli/cmds"
+	"rancherlabs/cattle-drive/cli/cmds/interactive"
+	"rancherlabs/cattle-drive/cli/cmds/migrate"
+	"rancherlabs/cattle-drive/cli/cmds/status"
+	"rancherlabs/cattle-drive/pkg/version"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"

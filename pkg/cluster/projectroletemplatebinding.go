@@ -3,7 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"galal-hussein/cattle-drive/pkg/client"
+	"rancherlabs/cattle-drive/pkg/client"
 	"strings"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"

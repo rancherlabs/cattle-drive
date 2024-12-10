@@ -20,8 +20,8 @@ builds:
     ldflags:
       - -s
       - -w
-      - -X "galal-hussein/cattle-drive/pkg/version.GitCommit={{ .FullCommit }}"
-      - -X "galal-hussein/cattle-drive/pkg/version.Version=v{{ .Version }}"
+      - -X "rancherlabs/cattle-drive/pkg/version.GitCommit={{ .FullCommit }}"
+      - -X "rancherlabs/cattle-drive/pkg/version.Version=v{{ .Version }}"
 
 archives:
   - format: tar.gz

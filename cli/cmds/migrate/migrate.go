@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"galal-hussein/cattle-drive/cli/cmds"
-	"galal-hussein/cattle-drive/pkg/client"
-	"galal-hussein/cattle-drive/pkg/cluster"
 	"os"
+	"rancherlabs/cattle-drive/cli/cmds"
+	"rancherlabs/cattle-drive/pkg/client"
+	"rancherlabs/cattle-drive/pkg/cluster"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/sirupsen/logrus"

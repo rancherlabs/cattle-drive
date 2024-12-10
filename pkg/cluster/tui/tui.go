@@ -2,11 +2,11 @@ package tui
 
 import (
 	"fmt"
-	"galal-hussein/cattle-drive/pkg/client"
-	"galal-hussein/cattle-drive/pkg/cluster"
-	"galal-hussein/cattle-drive/pkg/cluster/tui/constants"
 	"log"
 	"os"
+	"rancherlabs/cattle-drive/pkg/client"
+	"rancherlabs/cattle-drive/pkg/cluster"
+	"rancherlabs/cattle-drive/pkg/cluster/tui/constants"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

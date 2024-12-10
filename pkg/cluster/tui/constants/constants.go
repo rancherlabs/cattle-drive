@@ -1,9 +1,9 @@
 package constants
 
 import (
-	"galal-hussein/cattle-drive/pkg/client"
-	"galal-hussein/cattle-drive/pkg/cluster"
 	"os"
+	"rancherlabs/cattle-drive/pkg/client"
+	"rancherlabs/cattle-drive/pkg/cluster"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
