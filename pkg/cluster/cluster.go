@@ -344,7 +344,7 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 				var user v3.User
 				if err := client.Users.Get(ctx, "", userID, &user, v1.GetOptions{}); err != nil {
 					if apierrors.IsNotFound(err) {
-						return fmt.Errorf("user [%s] does not exists, please migrate user first", userID)
+						return errors.New("user " + userID + " does not exists, please migrate user first")
 					}
 				}
 
@@ -374,7 +374,7 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 			var user v3.User
 			if err := client.Users.Get(ctx, "", userID, &user, v1.GetOptions{}); err != nil {
 				if apierrors.IsNotFound(err) {
-					return fmt.Errorf("user [%s] does not exists, please migrate user first", userID)
+					return errors.New("user " + userID + " does not exists, please migrate user first")
 				}
 			}
 

@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"galal-hussein/cattle-drive/cli/cmds"
 	"galal-hussein/cattle-drive/pkg/client"
@@ -77,7 +78,7 @@ func migrate(clx *cli.Context) error {
 	cmds.Spinner.Start()
 
 	if source == "" || target == "" {
-		return fmt.Errorf("source or target is not specified")
+		return errors.New("source or target is not specified")
 	}
 
 	var clusters v3.ClusterList
