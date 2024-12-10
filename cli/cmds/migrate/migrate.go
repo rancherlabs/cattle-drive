@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"galal-hussein/cattle-drive/cli/cmds"
 	"galal-hussein/cattle-drive/pkg/client"
@@ -26,7 +27,7 @@ var (
 			Destination: &source,
 			Aliases:     []string{"s"},
 		},
-		&cli.StringFlag{
+		&cli.StringFlag{https://github.com/rancherlabs/cattle-drive/pull/9/conflict?name=cli%252Fcmds%252Fmigrate%252Fmigrate.go&ancestor_oid=38dfd762b78fafcff245ce52f24be4266a5b7830&base_oid=505ab5277a8713ea812d2ab04429496d3b10d096&head_oid=691928f200247163bfa64d6991e3d7dbf93445bf
 			Name:        "target",
 			Usage:       "name of the target cluster",
 			Destination: &target,
@@ -77,7 +78,7 @@ func migrate(clx *cli.Context) error {
 	cmds.Spinner.Start()
 
 	if source == "" || target == "" {
-		return fmt.Errorf("source or target is not specified")
+		return errors.New("source or target is not specified")
 	}
 
 	var clusters v3.ClusterList
