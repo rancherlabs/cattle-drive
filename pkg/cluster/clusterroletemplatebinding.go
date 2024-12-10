@@ -58,6 +58,21 @@ func (c *ClusterRoleTemplateBinding) Mutate(tc *Cluster) {
 	}
 }
 func (c *ClusterRoleTemplateBinding) SetDescription(ctx context.Context, client *client.Clients) error {
+	// check if this is a group
+	if c.Obj.UserName == "" && c.Obj.UserPrincipalName == "" {
+		groupName := c.Obj.GroupName
+		if groupName == "" {
+			// handling external auth providers
+			groupName = c.Obj.GroupPrincipalName
+		}
+		c.Description = fmt.Sprintf("%s permission for group %s", c.Obj.RoleTemplateName, groupName)
+		return nil
+	}
+	// setting description for external users
+	if c.Obj.UserPrincipalName != "" {
+		c.Description = fmt.Sprintf("%s permission for user %s", c.Obj.RoleTemplateName, c.Obj.UserPrincipalName)
+		return nil
+	}
 	var user v3.User
 	userID := c.Obj.UserName
 	if err := client.Users.Get(ctx, "", userID, &user, v1.GetOptions{}); err != nil {
