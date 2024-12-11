@@ -40,7 +40,7 @@ archives:
 
 release:
   github:
-    owner: galal-hussein
+    owner: rancherlabs
     name: cattle-drive
   prerelease: auto
 
