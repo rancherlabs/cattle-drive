@@ -53,6 +53,20 @@ func (p *ProjectRoleTemplateBinding) Mutate(clusterName, projectName string) {
 }
 
 func (p *ProjectRoleTemplateBinding) SetDescription(ctx context.Context, client *client.Clients) error {
+	if p.Obj.UserName == "" && p.Obj.UserPrincipalName == "" {
+		groupName := p.Obj.GroupName
+		if groupName == "" {
+			// handling external auth providers
+			groupName = p.Obj.GroupPrincipalName
+		}
+		p.Description = fmt.Sprintf("%s permission for group %s", p.Obj.RoleTemplateName, groupName)
+		return nil
+	}
+	// setting description for external users
+	if p.Obj.UserPrincipalName != "" {
+		p.Description = fmt.Sprintf("%s permission for user %s", p.Obj.RoleTemplateName, p.Obj.UserPrincipalName)
+		return nil
+	}
 	var user v3.User
 	userID := p.Obj.UserName
 	if err := client.Users.Get(ctx, "", userID, &user, v1.GetOptions{}); err != nil {
