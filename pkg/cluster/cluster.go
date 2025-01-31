@@ -102,7 +102,7 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		}
 		prtbList := []*ProjectRoleTemplateBinding{}
 		for _, item := range projectRoleTemplateBindings.Items {
-			if item.Name == "creator-project-owner" {
+			if item.Name == "creator-project-owner" || item.Name == "creator-project-member" {
 				continue
 			}
 			prtb := newPRTB(item, "", p.Spec.DisplayName)
