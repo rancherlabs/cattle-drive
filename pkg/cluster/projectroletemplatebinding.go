@@ -36,6 +36,10 @@ func (p *ProjectRoleTemplateBinding) normalize() {
 	// removing objectMeta and projectName since prtb has no spec
 	p.Obj.ObjectMeta = v1.ObjectMeta{}
 	p.Obj.ProjectName = ""
+	if p.Obj.GroupPrincipalName != "" || p.Obj.GroupName != "" {
+		p.Obj.UserName = ""
+		p.Obj.UserPrincipalName = ""
+	}
 }
 
 func (p *ProjectRoleTemplateBinding) Mutate(clusterName, projectName string) {
@@ -50,6 +54,22 @@ func (p *ProjectRoleTemplateBinding) Mutate(clusterName, projectName string) {
 			delete(p.Obj.Annotations, annotation)
 		}
 	}
+}
+
+func (p *ProjectRoleTemplateBinding) Compare(target *ProjectRoleTemplateBinding) bool {
+	// if group principal name exists in the target cluster we should just return true
+	// this is due to the original creator of the source cluster might be different than
+	// the target cluster creator
+	if target.Obj.GroupPrincipalName != "" || target.Obj.GroupName != "" {
+		return true
+	}
+	if p.Obj.UserName == target.Obj.UserName &&
+		p.Obj.UserPrincipalName == target.Obj.UserPrincipalName &&
+		p.Obj.ServiceAccount == target.Obj.ServiceAccount &&
+		p.Obj.RoleTemplateName == target.Obj.RoleTemplateName {
+		return true
+	}
+	return false
 }
 
 func (p *ProjectRoleTemplateBinding) SetDescription(ctx context.Context, client *client.Clients) error {
