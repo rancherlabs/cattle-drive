@@ -205,7 +205,7 @@ func (c *Cluster) Compare(ctx context.Context, tc *Cluster) error {
 					for _, tPrtb := range tProject.PRTBs {
 						if sPrtb.Name == tPrtb.Name {
 							sPrtb.Migrated = true
-							if !reflect.DeepEqual(sPrtb.Obj, tPrtb.Obj) {
+							if !sPrtb.Compare(tPrtb) {
 								sPrtb.Diff = true
 							}
 						}
@@ -347,7 +347,6 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 						return errors.New("user " + userID + " does not exists, please migrate user first")
 					}
 				}
-
 				prtb.Mutate(tc.Obj.Name, prtb.ProjectName)
 				if err := client.ProjectRoleTemplateBindings.Create(ctx, prtb.ProjectName, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
 					return err
