@@ -34,7 +34,9 @@ func newProject(obj v3.Project, prtbs []*ProjectRoleTemplateBinding, namespaces 
 // normalize will remove unneeded fields in the spec to make it easier to compare
 func (p *Project) normalize() {
 	p.Obj.Spec.ClusterName = ""
-	p.Obj.Spec.ResourceQuota.UsedLimit = v3.ResourceQuotaLimit{}
+	if p.Obj.Spec.ResourceQuota != nil {
+		p.Obj.Spec.ResourceQuota.UsedLimit = v3.ResourceQuotaLimit{}
+	}
 }
 
 // mutate will change the project object to be suitable for recreation to the target cluster

@@ -1,4 +1,4 @@
-FROM golang:1.22.0-alpine3.19 AS build
+FROM golang:1.24.0-alpine3.19 AS build
 RUN apk add -U --no-cache make git bash
 COPY . /src/cattle-drive
 WORKDIR /src/cattle-drive

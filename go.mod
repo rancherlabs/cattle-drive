@@ -1,6 +1,6 @@
 module rancherlabs/cattle-drive
 
-go 1.21.4
+go 1.24.0
 
 replace (
 	github.com/rancher/rancher/pkg/apis => github.com/rancher/rancher/pkg/apis v0.0.0-20240205102821-ed248439462a
