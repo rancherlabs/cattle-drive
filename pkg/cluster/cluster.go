@@ -323,7 +323,7 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 		if !p.Migrated {
 			fmt.Fprintf(w, "- migrating Project [%s]... ", p.Name)
 			p.Mutate(tc)
-			if err := client.Projects.Create(ctx, tc.Obj.Name, p.Obj, nil, v1.CreateOptions{}); err != nil {
+			if err := client.Projects.Create(ctx, tc.Obj.Name+"-"+p.Obj.Name, p.Obj, nil, v1.CreateOptions{}); err != nil {
 				return err
 			}
 			// set ProjectName for all ns and prtbs for this project
