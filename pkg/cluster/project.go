@@ -44,6 +44,9 @@ func (p *Project) Mutate(c *Cluster) {
 	newProjectName := "p-" + generateName(5)
 	p.Obj.Spec.ClusterName = c.Obj.Name
 	p.Obj.Namespace = c.Obj.Name
+	if p.Obj.Status.BackingNamespace != "" {
+		p.Obj.Namespace = c.Obj.Name + "-" + newProjectName
+	}
 	p.Obj.Status = v3.ProjectStatus{}
 	p.Obj.SetFinalizers(nil)
 	p.Obj.SetResourceVersion("")
