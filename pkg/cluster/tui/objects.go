@@ -237,7 +237,7 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 	case constants.PRTBType:
 		if i.status == constants.NotMigratedStatus {
 			prtb := i.obj.(*cluster.ProjectRoleTemplateBinding)
-			prtb.Mutate(constants.TC.Obj.Name, prtb.ProjectName)
+			prtb.Mutate(constants.TC.Obj.Name, prtb.ProjectName, false)
 			if err := cl.ProjectRoleTemplateBindings.Create(ctx, prtb.ProjectName, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
 				return nil, err
 			}
