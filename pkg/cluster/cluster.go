@@ -347,8 +347,15 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 						return errors.New("user " + userID + " does not exists, please migrate user first")
 					}
 				}
-				prtb.Mutate(tc.Obj.Name, prtb.ProjectName)
-				if err := client.ProjectRoleTemplateBindings.Create(ctx, prtb.ProjectName, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
+
+				var backingNamespace bool
+				namespace := prtb.ProjectName
+				if p.Obj.Status.BackingNamespace != "" {
+					namespace = tc.Obj.Name + "-" + prtb.ProjectName
+					backingNamespace = true
+				}
+				prtb.Mutate(tc.Obj.Name, prtb.ProjectName, backingNamespace)
+				if err := client.ProjectRoleTemplateBindings.Create(ctx, namespace, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
 					return err
 				}
 				fmt.Fprintf(w, "Done.\n")
