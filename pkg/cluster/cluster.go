@@ -97,7 +97,11 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 			continue
 		}
 		// prtbs
-		if err := client.ProjectRoleTemplateBindings.List(ctx, p.Name, &projectRoleTemplateBindings, v1.ListOptions{}); err != nil {
+		namespace := p.Name
+		if p.Status.BackingNamespace != "" {
+			namespace = c.Obj.Name + "-" + p.Name
+		}
+		if err := client.ProjectRoleTemplateBindings.List(ctx, namespace, &projectRoleTemplateBindings, v1.ListOptions{}); err != nil {
 			return err
 		}
 		prtbList := []*ProjectRoleTemplateBinding{}
