@@ -7,6 +7,7 @@ import (
 	"io"
 	"rancherlabs/cattle-drive/pkg/client"
 	"reflect"
+	"strings"
 
 	v1catalog "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
@@ -98,7 +99,7 @@ func (c *Cluster) Populate(ctx context.Context, client *client.Clients) error {
 		}
 		// prtbs
 		namespace := p.Name
-		if p.Status.BackingNamespace != "" {
+		if strings.HasPrefix(p.Status.BackingNamespace, "c-") {
 			namespace = c.Obj.Name + "-" + p.Name
 		}
 		if err := client.ProjectRoleTemplateBindings.List(ctx, namespace, &projectRoleTemplateBindings, v1.ListOptions{}); err != nil {
@@ -354,7 +355,7 @@ func (c *Cluster) Migrate(ctx context.Context, client *client.Clients, tc *Clust
 
 				var backingNamespace bool
 				namespace := prtb.ProjectName
-				if p.Obj.Status.BackingNamespace != "" {
+				if strings.HasPrefix(p.Obj.Status.BackingNamespace, "c-") {
 					namespace = tc.Obj.Name + "-" + prtb.ProjectName
 					backingNamespace = true
 				}
