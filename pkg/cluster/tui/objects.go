@@ -244,7 +244,7 @@ func (m *Objects) migrateObject(ctx context.Context, i item) (tea.Msg, error) {
 				return nil, err
 			}
 			ns := prtb.ProjectName
-			if project.Status.BackingNamespace != "" {
+			if strings.HasPrefix(project.Status.BackingNamespace, "c-") {
 				ns = constants.SC.Obj.Name + "-" + prtb.ProjectName
 			}
 			if err := cl.ProjectRoleTemplateBindings.Create(ctx, ns, prtb.Obj, nil, v1.CreateOptions{}); err != nil {
